@@ -25,15 +25,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      // Check if user is logged in from localStorage
-      const savedUser = localStorage.getItem("currentUser")
-      if (savedUser) {
-        setUser(JSON.parse(savedUser))
+      // Check if we're in browser environment
+      if (typeof window !== 'undefined') {
+        // Check if user is logged in from localStorage
+        const savedUser = localStorage.getItem("currentUser")
+        if (savedUser) {
+          setUser(JSON.parse(savedUser))
+        }
       }
     } catch (error) {
       console.error("Error loading user from localStorage:", error)
       // Clear corrupted data
-      localStorage.removeItem("currentUser")
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem("currentUser")
+      }
     } finally {
       setLoading(false)
     }
@@ -48,7 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         full_name: email.split("@")[0],
       }
       setUser(mockUser)
-      localStorage.setItem("currentUser", JSON.stringify(mockUser))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("currentUser", JSON.stringify(mockUser))
+      }
       return {}
     }
     return { error: { message: "Email dan password harus diisi" } }
@@ -63,7 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         full_name: fullName,
       }
       setUser(mockUser)
-      localStorage.setItem("currentUser", JSON.stringify(mockUser))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("currentUser", JSON.stringify(mockUser))
+      }
       return {}
     }
     return { error: { message: "Semua field harus diisi" } }
@@ -71,10 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     setUser(null)
-    localStorage.removeItem("currentUser")
-    localStorage.removeItem("userProfile")
-    localStorage.removeItem("cvAnalysis")
-    localStorage.removeItem("mbtiResult")
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("currentUser")
+      localStorage.removeItem("userProfile")
+      localStorage.removeItem("cvAnalysis")
+      localStorage.removeItem("mbtiResult")
+    }
   }
 
   const value = {

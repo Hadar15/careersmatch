@@ -205,6 +205,11 @@ export const mockSkillGaps = [
 
 // Helper functions untuk localStorage
 export const saveUserProfile = (profile: Partial<UserProfile>) => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return profile as UserProfile
+  }
+
   const existing = getUserProfile()
   const updated = { ...existing, ...profile }
   localStorage.setItem("userProfile", JSON.stringify(updated))
@@ -212,6 +217,21 @@ export const saveUserProfile = (profile: Partial<UserProfile>) => {
 }
 
 export const getUserProfile = (): UserProfile => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return {
+      id: "mock-user-id",
+      email: "",
+      full_name: null,
+      phone: null,
+      location: null,
+      professional_summary: null,
+      experience_years: null,
+      mbti_type: null,
+      profile_completion: 20,
+    }
+  }
+
   try {
     const saved = localStorage.getItem("userProfile")
     if (saved) {
@@ -248,6 +268,11 @@ export const getUserProfile = (): UserProfile => {
 }
 
 export const saveCVAnalysis = (analysis: CVAnalysis) => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return
+  }
+
   localStorage.setItem("cvAnalysis", JSON.stringify(analysis))
   // Update profile completion
   const profile = getUserProfile()
@@ -255,11 +280,21 @@ export const saveCVAnalysis = (analysis: CVAnalysis) => {
 }
 
 export const getCVAnalysis = (): CVAnalysis | null => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return null
+  }
+
   const saved = localStorage.getItem("cvAnalysis")
   return saved ? JSON.parse(saved) : null
 }
 
 export const saveMBTIResult = (result: MBTIResult) => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return
+  }
+
   localStorage.setItem("mbtiResult", JSON.stringify(result))
   // Update profile completion and MBTI type
   const profile = getUserProfile()
@@ -271,6 +306,11 @@ export const saveMBTIResult = (result: MBTIResult) => {
 }
 
 export const getMBTIResult = (): MBTIResult | null => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return null
+  }
+
   const saved = localStorage.getItem("mbtiResult")
   return saved ? JSON.parse(saved) : null
 }

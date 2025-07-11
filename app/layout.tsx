@@ -11,7 +11,13 @@ export const metadata: Metadata = {
   title: "CareerMatch AI - Find Your Perfect Job with AI",
   description:
     "AI-powered job matching platform that analyzes your CV and personality to find the perfect career opportunities.",
-  generator: 'v0.dev'
+  generator: 'v0.dev',
+  robots: 'index, follow',
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({

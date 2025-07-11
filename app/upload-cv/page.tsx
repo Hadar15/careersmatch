@@ -104,12 +104,14 @@ export default function UploadCVPage() {
       const mockAnalysis = await simulateAIAnalysis(cvFile.name)
 
       // Save analysis result to localStorage
-      localStorage.setItem("cvAnalysis", JSON.stringify(mockAnalysis))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("cvAnalysis", JSON.stringify(mockAnalysis))
 
-      // Update profile completion
-      const profile = JSON.parse(localStorage.getItem("userProfile") || "{}")
-      profile.profile_completion = 70
-      localStorage.setItem("userProfile", JSON.stringify(profile))
+        // Update profile completion
+        const profile = JSON.parse(localStorage.getItem("userProfile") || "{}")
+        profile.profile_completion = 70
+        localStorage.setItem("userProfile", JSON.stringify(profile))
+      }
 
       setAnalysisResult(mockAnalysis)
       setAnalysisComplete(true)
