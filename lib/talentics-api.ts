@@ -54,29 +54,9 @@ class TalenticsAPI {
     featured?: boolean
   }): Promise<TalenticsApiResponse> {
     try {
-      const searchParams = new URLSearchParams()
-
-      if (params?.page) searchParams.append("page", params.page.toString())
-      if (params?.per_page) searchParams.append("per_page", params.per_page.toString())
-      if (params?.location) searchParams.append("location", params.location)
-      if (params?.job_type) searchParams.append("job_type", params.job_type)
-      if (params?.experience_level) searchParams.append("experience_level", params.experience_level)
-      if (params?.skills) searchParams.append("skills", params.skills.join(","))
-      if (params?.company) searchParams.append("company", params.company)
-      if (params?.featured) searchParams.append("featured", "true")
-
-      const response = await fetch(`${this.baseUrl}/jobs?${searchParams}`, {
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Talentics API error: ${response.status}`)
-      }
-
-      return await response.json()
+      // For demo purposes, always return mock data
+      // In production, you would use the real API
+      return this.getMockJobs(params)
     } catch (error) {
       console.error("Error fetching jobs from Talentics:", error)
       // Return mock data as fallback

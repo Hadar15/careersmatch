@@ -212,14 +212,27 @@ export const saveUserProfile = (profile: Partial<UserProfile>) => {
 }
 
 export const getUserProfile = (): UserProfile => {
-  const saved = localStorage.getItem("userProfile")
-  if (saved) {
-    return JSON.parse(saved)
+  try {
+    const saved = localStorage.getItem("userProfile")
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (error) {
+    console.error("Error loading user profile from localStorage:", error)
+    localStorage.removeItem("userProfile")
   }
 
   // Default profile
-  const currentUser = localStorage.getItem("currentUser")
-  const user = currentUser ? JSON.parse(currentUser) : null
+  let user = null
+  try {
+    const currentUser = localStorage.getItem("currentUser")
+    if (currentUser) {
+      user = JSON.parse(currentUser)
+    }
+  } catch (error) {
+    console.error("Error loading current user from localStorage:", error)
+    localStorage.removeItem("currentUser")
+  }
 
   return {
     id: user?.id || "mock-user-id",

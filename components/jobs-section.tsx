@@ -21,20 +21,18 @@ export function JobsSection() {
       setLoading(true)
       setError(null)
 
-      // Fetch featured jobs
-      const featuredResponse = await talenticsAPI.getJobs({
-        featured: true,
-        per_page: 3,
+      // Fetch all jobs
+      const response = await talenticsAPI.getJobs({
+        per_page: 20,
       })
 
-      // Fetch regular jobs
-      const regularResponse = await talenticsAPI.getJobs({
-        per_page: 12,
-      })
+      // Separate featured and regular jobs
+      const featured = response.jobs.filter((job) => job.featured)
+      const regular = response.jobs.filter((job) => !job.featured)
 
-      setFeaturedJobs(featuredResponse.jobs.filter((job) => job.featured))
-      setRegularJobs(regularResponse.jobs.filter((job) => !job.featured))
-      setJobs(regularResponse.jobs)
+      setFeaturedJobs(featured)
+      setRegularJobs(regular)
+      setJobs(response.jobs)
     } catch (err) {
       setError("Failed to load jobs from Talentics")
       console.error("Error fetching jobs:", err)

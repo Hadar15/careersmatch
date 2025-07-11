@@ -23,10 +23,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      // Load profile from localStorage
-      const userProfile = getUserProfile()
-      setProfile(userProfile)
-      setLoading(false)
+      try {
+        // Load profile from localStorage
+        const userProfile = getUserProfile()
+        setProfile(userProfile)
+      } catch (error) {
+        console.error("Error loading user profile:", error)
+        // Set default profile if there's an error
+        setProfile({
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          phone: null,
+          location: null,
+          professional_summary: null,
+          experience_years: null,
+          mbti_type: null,
+          profile_completion: 20,
+        })
+      } finally {
+        setLoading(false)
+      }
     }
   }, [user])
 

@@ -63,13 +63,15 @@ export function JobCard({ job, compact = false }: JobCardProps) {
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-start space-x-4 flex-1">
-              {job.company.logo && (
-                <img
-                  src={job.company.logo || "/placeholder.svg"}
-                  alt={job.company.name}
-                  className="w-12 h-12 rounded-lg object-cover border border-sky-100"
-                />
-              )}
+              <img
+                src={job.company.logo || "/placeholder.svg"}
+                alt={job.company.name}
+                className="w-12 h-12 rounded-lg object-cover border border-sky-100"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/placeholder.svg";
+                }}
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 mb-2">
                   <h3 className="font-bold text-lg text-gray-800 truncate">{job.title}</h3>
@@ -159,13 +161,15 @@ export function JobCard({ job, compact = false }: JobCardProps) {
       <CardContent className="p-8">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-start space-x-4 flex-1">
-            {job.company.logo && (
-              <img
-                src={job.company.logo || "/placeholder.svg"}
-                alt={job.company.name}
-                className="w-16 h-16 rounded-xl object-cover border border-sky-100 shadow-lg"
-              />
-            )}
+            <img
+              src={job.company.logo || "/placeholder.svg"}
+              alt={job.company.name}
+              className="w-16 h-16 rounded-xl object-cover border border-sky-100 shadow-lg"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "/placeholder.svg";
+              }}
+            />
             <div className="flex-1">
               <div className="flex items-center space-x-3 mb-3">
                 <h3 className="text-2xl font-bold text-gray-800">{job.title}</h3>
