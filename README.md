@@ -39,8 +39,8 @@ Platform AI terdepan untuk membantu profesional Indonesia menemukan karir impian
 
 1. **Clone repository**
 ```bash
-git clone https://github.com/Hadar15/CareerMatch.git
-cd CareerMatch
+git clone https://github.com/Hadar15/careersmatch.git
+cd careersmatch
 ```
 
 2. **Install dependencies**
@@ -186,7 +186,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 **CareerMatch AI** - [@Hadar15](https://github.com/Hadar15)
 
-Project Link: [https://github.com/Hadar15/CareerMatch](https://github.com/Hadar15/CareerMatch)
+Project Link: [https://github.com/Hadar15/careersmatch](https://github.com/Hadar15/careersmatch)
 
 ## 🙏 Acknowledgments
 
