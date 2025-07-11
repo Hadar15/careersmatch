@@ -4,8 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/auth"
-import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/lib/mock-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -67,28 +66,18 @@ export default function UploadCVPage() {
 
   const handlePersonalInfoSubmit = async () => {
     try {
-      // Update profile in database
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: personalInfo.name,
-          phone: personalInfo.phone,
-          location: personalInfo.location,
-          professional_summary: personalInfo.summary,
-          experience_years: Number.parseInt(personalInfo.experience_years) || null,
-          profile_completion: 40, // Increase completion percentage
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user?.id)
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Gagal menyimpan informasi personal",
-          variant: "destructive",
-        })
-        return
+      // Save to localStorage for demo
+      const profile = {
+        full_name: personalInfo.name,
+        phone: personalInfo.phone,
+        location: personalInfo.location,
+        professional_summary: personalInfo.summary,
+        experience_years: Number.parseInt(personalInfo.experience_years) || null,
+        profile_completion: 40,
+        updated_at: new Date().toISOString(),
       }
+      
+      localStorage.setItem("userProfile", JSON.stringify(profile))
 
       setStep(2)
       toast({
@@ -111,70 +100,16 @@ export default function UploadCVPage() {
     setIsAnalyzing(true)
 
     try {
-      // Upload file to Supabase Storage
-      const fileExt = cvFile.name.split(".").pop()
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("cv-uploads")
-        .upload(fileName, cvFile)
-
-      if (uploadError) {
-        throw uploadError
-      }
-
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("cv-uploads").getPublicUrl(fileName)
-
-      // Save CV upload record
-      const { data: cvRecord, error: cvError } = await supabase
-        .from("cv_uploads")
-        .insert({
-          user_id: user.id,
-          file_name: cvFile.name,
-          file_url: publicUrl,
-          file_size: cvFile.size,
-          analysis_status: "processing",
-        })
-        .select()
-        .single()
-
-      if (cvError) {
-        throw cvError
-      }
-
-      // Simulate AI analysis (in real implementation, you would extract text from PDF/DOC and analyze)
+      // Simulate file upload and analysis for demo
       const mockAnalysis = await simulateAIAnalysis(cvFile.name)
 
-      // Update CV record with analysis
-      const { error: updateError } = await supabase
-        .from("cv_uploads")
-        .update({
-          analysis_status: "completed",
-          analysis_result: mockAnalysis,
-          skills_extracted: mockAnalysis.skills,
-          experience_extracted: mockAnalysis.experience,
-        })
-        .eq("id", cvRecord.id)
-
-      if (updateError) {
-        throw updateError
-      }
+      // Save analysis result to localStorage
+      localStorage.setItem("cvAnalysis", JSON.stringify(mockAnalysis))
 
       // Update profile completion
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          profile_completion: 70,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id)
-
-      if (profileError) {
-        throw profileError
-      }
+      const profile = JSON.parse(localStorage.getItem("userProfile") || "{}")
+      profile.profile_completion = 70
+      localStorage.setItem("userProfile", JSON.stringify(profile))
 
       setAnalysisResult(mockAnalysis)
       setAnalysisComplete(true)
