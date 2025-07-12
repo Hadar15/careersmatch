@@ -124,47 +124,6 @@ export function CoursesSection() {
     fetchCourses()
   }
 
-  if (loading) {
-    return (
-      <section className="py-12 sm:py-16 md:py-20 px-4 bg-white/60 backdrop-blur-sm">
-        <div className="container mx-auto">
-          <div className="text-center">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-              <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-spin" />
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Loading Courses from Class Central</h2>
-            <p className="text-sm sm:text-base text-gray-600">Fetching the latest courses for you...</p>
-          </div>
-        </div>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section className="py-12 sm:py-16 md:py-20 px-4 bg-white/60 backdrop-blur-sm">
-        <div className="container mx-auto">
-          <Card className="border-red-200 bg-red-50/50 max-w-md mx-auto">
-            <CardContent className="p-6 sm:p-8 text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-bold text-red-800 mb-2">Unable to Load Courses</h3>
-              <p className="text-sm sm:text-base text-red-600 mb-4">{error}</p>
-              <Button
-                onClick={handleRefresh}
-                className="bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600"
-              >
-                <RefreshCw className="mr-2 w-4 h-4" />
-                Try Again
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-    )
-  }
-
   return (
     <section className="py-12 sm:py-16 md:py-20 px-4 bg-white/60 backdrop-blur-sm">
       <div className="container mx-auto">
@@ -203,6 +162,16 @@ export function CoursesSection() {
         <div className="max-w-6xl mx-auto">
           <Card className="border-emerald-100 bg-white/90 backdrop-blur-sm shadow-xl">
             <CardContent className="p-4 sm:p-6">
+              {/* Error Message - Always show if there's an error */}
+              {error && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center text-yellow-800">
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <span className="text-sm font-medium">{error}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
                 <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 flex items-center">
                   <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 mr-2" />
@@ -230,42 +199,53 @@ export function CoursesSection() {
                 </div>
               </div>
 
-              {/* Courses Grid - Responsive with better mobile layout */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-h-[400px] sm:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-gray-100">
-                {courses.map((course) => (
-                  <div key={course.id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 hover:border-emerald-300 transition-colors hover:shadow-md">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-gray-800 text-xs sm:text-sm line-clamp-2 flex-1 mr-2">{course.title}</h4>
-                      <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-600 shrink-0">
-                        Free
-                      </Badge>
-                    </div>
-                    <p className="text-emerald-600 font-medium text-xs mb-2">{course.provider}</p>
-                    <div className="flex items-center text-xs text-gray-500 mb-3">
-                      <span className="flex items-center">
-                        🎓 {course.category}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">
-                        {new Date(course.pubDate).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric'
-                        })}
-                      </span>
-                      <Button
-                        size="sm"
-                        className="text-xs bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white px-2 py-1 h-6"
-                        onClick={() => window.open(course.link, '_blank')}
-                      >
-                        View
-                        <ArrowRight className="ml-1 w-3 h-3" />
-                      </Button>
-                    </div>
+              {/* Loading State */}
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                    <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-spin" />
                   </div>
-                ))}
-              </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Loading Courses from Class Central</h3>
+                  <p className="text-sm sm:text-base text-gray-600">Fetching the latest courses for you...</p>
+                </div>
+              ) : (
+                /* Courses Grid - Responsive with better mobile layout */
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-h-[400px] sm:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-gray-100">
+                  {courses.map((course) => (
+                    <div key={course.id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 hover:border-emerald-300 transition-colors hover:shadow-md">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-gray-800 text-xs sm:text-sm line-clamp-2 flex-1 mr-2">{course.title}</h4>
+                        <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-600 shrink-0">
+                          Free
+                        </Badge>
+                      </div>
+                      <p className="text-emerald-600 font-medium text-xs mb-2">{course.provider}</p>
+                      <div className="flex items-center text-xs text-gray-500 mb-3">
+                        <span className="flex items-center">
+                          🎓 {course.category}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">
+                          {new Date(course.pubDate).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </span>
+                        <Button
+                          size="sm"
+                          className="text-xs bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white px-2 py-1 h-6"
+                          onClick={() => window.open(course.link, '_blank')}
+                        >
+                          View
+                          <ArrowRight className="ml-1 w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* View All Courses Button */}
               <div className="text-center mt-6">
