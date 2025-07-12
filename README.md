@@ -1,5 +1,7 @@
 # Job Matching Platform
 
+Haidar Ganteng aw aw aw
+
 A modern, AI-powered job matching platform built with Next.js, React, and TypeScript. This platform connects job seekers with opportunities from Remotive API, providing a seamless experience for finding remote and local job opportunities.
 
 ## 🚀 Features
