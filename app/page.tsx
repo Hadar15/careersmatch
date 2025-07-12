@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { JobsSection } from "@/components/jobs-section"
+import { CoursesSection } from "@/components/courses-section"
 import {
   ArrowRight,
   Brain,
@@ -51,6 +52,9 @@ export default function HomePage() {
             </Link>
             <Link href="#jobs" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Jobs
+            </Link>
+            <Link href="#courses" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+              Courses
             </Link>
             <Link href="#how-it-works" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Cara Kerja
@@ -109,6 +113,13 @@ export default function HomePage() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Jobs
+                </Link>
+                <Link 
+                  href="#courses" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Courses
                 </Link>
                 <Link 
                   href="#how-it-works" 
@@ -233,6 +244,11 @@ export default function HomePage() {
       {/* Jobs Section from Remotive API */}
       <section id="jobs">
         <JobsSection />
+      </section>
+
+      {/* Courses Section from Class Central API */}
+      <section id="courses">
+        <CoursesSection />
       </section>
 
       {/* Features Section */}
