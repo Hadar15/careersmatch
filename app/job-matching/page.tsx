@@ -220,7 +220,7 @@ export default function JobMatchingPage() {
               98% Akurasi
             </Badge>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-3 leading-tight pb-2">
             Job Matching Results
           </h1>
           <p className="text-xl text-gray-600 font-medium">

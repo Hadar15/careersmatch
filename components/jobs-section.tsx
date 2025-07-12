@@ -174,7 +174,7 @@ export function JobsSection() {
             <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Live Jobs from Remotive
           </Badge>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent leading-tight pb-2">
             Latest Job Opportunities
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">

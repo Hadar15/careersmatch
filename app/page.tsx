@@ -243,7 +243,7 @@ export default function HomePage() {
               <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Fitur Unggulan
             </Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent leading-tight pb-2">
               Teknologi AI Terdepan
             </h2>
             <p className="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">
@@ -359,7 +359,7 @@ export default function HomePage() {
               <Zap className="w-5 h-5 mr-2" />
               Proses Mudah
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent leading-tight pb-2">
               4 Langkah Menuju Karir Impian
             </h2>
             <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">
