@@ -14,7 +14,7 @@ export function CoursesSection() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isUsingMockData, setIsUsingMockData] = useState(false)
-  const [dataSource, setDataSource] = useState<'classcentral' | 'mock' | null>(null)
+  const [dataSource, setDataSource] = useState<'classcentral' | 'mock' | 'fallback' | null>(null)
 
   const fetchCourses = async () => {
     try {
@@ -26,89 +26,87 @@ export function CoursesSection() {
       const response = await fetch('/api/courses/classcentral')
       const data = await response.json()
 
-      // Check if this is actually from Class Central API or fallback mock data
-      const isRealClassCentralData = data.courses.some((course: Course) => 
-        course.link && 
-        !course.link.includes('classcentral.com/course/') && 
-        course.provider && 
-        course.id && 
-        course.id.includes('course-')
-      )
-
-      if (isRealClassCentralData) {
+      // Check data source from API response
+      if (data.dataSource && data.dataSource !== 'mock' && data.dataSource !== 'fallback') {
         setDataSource('classcentral')
         console.log("✅ Successfully fetched courses from Class Central API:", data.courses.length, "courses")
+        console.log("📡 Data source:", data.dataSource)
+      } else if (data.dataSource === 'fallback') {
+        setDataSource('fallback')
+        setIsUsingMockData(true)
+        setError("Tidak dapat mengakses Class Central API. Menampilkan data contoh.")
+        console.log("⚠️ Using fallback data - API returned fallback data")
       } else {
         setDataSource('mock')
         setIsUsingMockData(true)
-        console.log("⚠️ Using fallback mock data - API returned mock data")
+        console.log("⚠️ Using mock data - API returned mock data")
       }
 
       setCourses(data.courses)
     } catch (err) {
       console.error("❌ Error fetching courses:", err)
       
-      // Use mock data as fallback
+      // Use enhanced mock data as fallback
       const mockCourses: Course[] = [
         {
-          id: "course-1",
-          title: "Introduction to Computer Science",
-          link: "https://www.classcentral.com/course/intro-cs",
+          id: "course-1-error",
+          title: "CS50's Introduction to Computer Science",
+          link: "https://www.classcentral.com/course/edx-cs50s-introduction-to-computer-science-9656",
           pubDate: new Date().toISOString(),
-          contentSnippet: "Learn the fundamentals of computer science and programming with this comprehensive course.",
+          contentSnippet: "An introduction to the intellectual enterprises of computer science and the art of programming.",
           category: "Computer Science",
           provider: "Harvard University"
         },
         {
-          id: "course-2",
-          title: "Machine Learning Fundamentals",
-          link: "https://www.classcentral.com/course/ml-fundamentals",
+          id: "course-2-error",
+          title: "Machine Learning by Stanford University",
+          link: "https://www.classcentral.com/course/coursera-machine-learning-835",
           pubDate: new Date(Date.now() - 86400000).toISOString(),
-          contentSnippet: "Master the basics of machine learning algorithms and their applications in real-world scenarios.",
+          contentSnippet: "Learn about machine learning algorithms and their applications in real-world scenarios.",
           category: "Artificial Intelligence",
           provider: "Stanford University"
         },
         {
-          id: "course-3",
-          title: "Web Development Bootcamp",
-          link: "https://www.classcentral.com/course/web-dev",
+          id: "course-3-error",
+          title: "The Complete Web Developer Bootcamp",
+          link: "https://www.classcentral.com/course/udemy-the-complete-web-developer-bootcamp-12345",
           pubDate: new Date(Date.now() - 172800000).toISOString(),
-          contentSnippet: "Complete course on modern web development including HTML, CSS, JavaScript, and React.",
+          contentSnippet: "Learn web development from scratch with HTML, CSS, JavaScript, and modern frameworks.",
           category: "Web Development",
           provider: "Udemy"
         },
         {
-          id: "course-4",
-          title: "Data Science Essentials",
-          link: "https://www.classcentral.com/course/data-science",
+          id: "course-4-error",
+          title: "Data Science: Machine Learning",
+          link: "https://www.classcentral.com/course/edx-data-science-machine-learning-6789",
           pubDate: new Date(Date.now() - 259200000).toISOString(),
-          contentSnippet: "Learn data analysis, visualization, and statistical methods for data science projects.",
+          contentSnippet: "Build a movie recommendation system and learn the science behind one of the most popular and successful data science techniques.",
           category: "Data Science",
           provider: "MIT"
         },
         {
-          id: "course-5",
-          title: "Cybersecurity Fundamentals",
-          link: "https://www.classcentral.com/course/cybersecurity",
+          id: "course-5-error",
+          title: "Python for Everybody",
+          link: "https://www.classcentral.com/course/coursera-python-for-everybody-2345",
           pubDate: new Date(Date.now() - 345600000).toISOString(),
-          contentSnippet: "Understand the basics of cybersecurity, network security, and ethical hacking.",
-          category: "Cybersecurity",
-          provider: "Coursera"
+          contentSnippet: "Learn to program and analyze data with Python. Develop programs to gather, clean, analyze, and visualize data.",
+          category: "Programming",
+          provider: "University of Michigan"
         },
         {
-          id: "course-6",
-          title: "Python Programming Masterclass",
-          link: "https://www.classcentral.com/course/python-masterclass",
+          id: "course-6-error",
+          title: "Introduction to Cybersecurity",
+          link: "https://www.classcentral.com/course/edx-introduction-to-cybersecurity-3456",
           pubDate: new Date(Date.now() - 432000000).toISOString(),
-          contentSnippet: "Comprehensive Python programming course from beginner to advanced level.",
-          category: "Programming",
-          provider: "edX"
+          contentSnippet: "Learn the basics of cybersecurity, network security, and ethical hacking principles.",
+          category: "Cybersecurity",
+          provider: "Coursera"
         }
       ];
       
       setCourses(mockCourses)
       setIsUsingMockData(true)
-      setDataSource('mock')
+      setDataSource('fallback')
       setError("Tidak dapat mengakses Class Central API. Menampilkan data contoh.")
       console.log("⚠️ Using fallback mock data due to API error")
     } finally {
@@ -181,15 +179,20 @@ export function CoursesSection() {
                   <Badge variant="outline" className="border-gray-200 text-gray-600 text-xs sm:text-sm">
                     {courses.length} Courses Available
                   </Badge>
-                  {dataSource === 'mock' ? (
-                    <Badge variant="outline" className="border-yellow-200 text-yellow-600 flex items-center text-xs sm:text-sm">
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      Demo Data
-                    </Badge>
-                  ) : dataSource === 'classcentral' ? (
+                  {dataSource === 'classcentral' ? (
                     <Badge variant="outline" className="border-green-200 text-green-600 flex items-center text-xs sm:text-sm">
                       <CheckCircle className="w-3 h-3 mr-1" />
                       Live Data
+                    </Badge>
+                  ) : dataSource === 'fallback' ? (
+                    <Badge variant="outline" className="border-orange-200 text-orange-600 flex items-center text-xs sm:text-sm">
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      Enhanced Demo
+                    </Badge>
+                  ) : dataSource === 'mock' ? (
+                    <Badge variant="outline" className="border-yellow-200 text-yellow-600 flex items-center text-xs sm:text-sm">
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      Demo Data
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="border-gray-200 text-gray-500 flex items-center text-xs sm:text-sm">
