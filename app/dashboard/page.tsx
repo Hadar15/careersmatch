@@ -13,6 +13,7 @@ import { Brain, MapPin, DollarSign, User, BookOpen, Clock, ArrowRight, Star, Upl
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { formatJobType } from "@/lib/utils"
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth()
@@ -285,7 +286,7 @@ export default function DashboardPage() {
                               <span>{job.salary}</span>
                             </div>
                             <Badge variant="outline" className="border-emerald-200 text-emerald-600">
-                              {job.type}
+                              {formatJobType(job.type)}
                             </Badge>
                           </div>
                         </div>

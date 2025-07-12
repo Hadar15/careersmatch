@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { MapPin, Building, Clock, ExternalLink, Heart, Star } from "lucide-react"
 import type { RemotiveJob } from "@/lib/remotive-api"
 import { useState } from "react"
+import { formatJobType } from "@/lib/utils"
 
 // .
 
@@ -62,7 +63,7 @@ export function JobCard({ job, compact = false }: JobCardProps) {
                   </div>
                   <div className="flex items-center space-x-1">
                     <Building className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span>{job.job_type}</span>
+                    <span>{formatJobType(job.job_type)}</span>
                   </div>
                 </div>
               </div>
@@ -121,7 +122,7 @@ export function JobCard({ job, compact = false }: JobCardProps) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Building className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span>{job.job_type}</span>
+                  <span>{formatJobType(job.job_type)}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Clock className="w-3 h-3 sm:w-4 sm:h-4" />

@@ -8,6 +8,7 @@ import { JobCard } from "@/components/job-card"
 import { remotiveAPI, type RemotiveJob } from "@/lib/remotive-api"
 import { Briefcase, ArrowRight, Loader2, RefreshCw, Filter, Building, Star, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import { formatJobType } from "@/lib/utils"
 
 export function JobsSection() {
   const [jobs, setJobs] = useState<RemotiveJob[]>([])
@@ -237,7 +238,7 @@ export function JobsSection() {
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold text-gray-800 text-xs sm:text-sm line-clamp-2 flex-1 mr-2">{job.title}</h4>
                       <Badge variant="outline" className="text-xs border-sky-200 text-sky-600 shrink-0">
-                        {job.job_type}
+                        {formatJobType(job.job_type)}
                       </Badge>
                     </div>
                     <p className="text-sky-600 font-medium text-xs mb-2">{job.company_name}</p>
