@@ -6,9 +6,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  experimental: {
-    // Remove deprecated appDir option
-  },
   async rewrites() {
     return [
       {
