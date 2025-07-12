@@ -26,7 +26,7 @@ Platform AI terdepan untuk membantu profesional Indonesia menemukan karir impian
 - **Styling**: Tailwind CSS, Radix UI Components
 - **State Management**: React Hooks, Context API
 - **Authentication**: Custom Auth System dengan localStorage
-- **API Integration**: Talentics API (dengan fallback mock data)
+- **API Integration**: Remotive API (dengan fallback mock data)
 - **Deployment**: Vercel, Netlify, atau GitHub Pages
 
 ## 🚀 Cara Menjalankan Project
@@ -53,7 +53,7 @@ pnpm install
 3. **Setup environment variables**
 ```bash
 # Buat file .env.local
-NEXT_PUBLIC_TALENTICS_API_KEY=demo-api-key
+NEXT_PUBLIC_REMOTIVE_API_KEY=demo-api-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
@@ -87,7 +87,7 @@ CareerMatch/
 ├── lib/                   # Utility libraries
 │   ├── mock-auth.tsx     # Mock authentication
 │   ├── mock-data.ts      # Mock data for demo
-│   ├── talentics-api.ts  # API integration
+│   ├── remotive-api.ts  # API integration
 │   └── utils.ts          # Utility functions
 ├── hooks/                 # Custom React hooks
 └── public/               # Static assets
@@ -101,7 +101,7 @@ CareerMatch/
 - **Session Management**: Persistent login dengan localStorage
 
 ### 💼 Job Matching
-- **Job Listings**: Daftar pekerjaan dari Talentics API
+- **Job Listings**: Daftar pekerjaan dari Remotive API
 - **Smart Filtering**: Filter berdasarkan lokasi, skill, experience
 - **Match Percentage**: Persentase kecocokan dengan profil Anda
 - **Apply Directly**: Langsung apply ke lowongan
@@ -194,7 +194,7 @@ Project Link: [https://github.com/Hadar15/careersmatch](https://github.com/Hadar
 - [Tailwind CSS](https://tailwindcss.com/) - CSS Framework
 - [Radix UI](https://www.radix-ui.com/) - UI Components
 - [Lucide React](https://lucide.dev/) - Icons
-- [Talentics API](https://talentics.com/) - Job Data API
+- [Remotive API](https://remotive.io/) - Job Data API
 
 ---
 

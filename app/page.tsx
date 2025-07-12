@@ -157,7 +157,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Jobs Section from Talentics API */}
+              {/* Jobs Section from Remotive API */}
       <section id="jobs">
         <JobsSection />
       </section>
