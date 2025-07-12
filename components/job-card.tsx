@@ -7,6 +7,8 @@ import { MapPin, Building, Clock, ExternalLink, Heart, Star } from "lucide-react
 import type { RemotiveJob } from "@/lib/remotive-api"
 import { useState } from "react"
 
+// .
+
 interface JobCardProps {
   job: RemotiveJob
   compact?: boolean
