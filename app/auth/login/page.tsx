@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/mock-auth"
+import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,7 +19,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-
   const { signIn } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
@@ -31,7 +30,6 @@ export default function LoginPage() {
 
     try {
       const { error } = await signIn(email, password)
-
       if (error) {
         setError(error.message)
         toast({
@@ -85,7 +83,7 @@ export default function LoginPage() {
             {/* Demo Notice */}
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700 mb-2">
-                <strong>Mode Demo:</strong> Gunakan kredensial apapun untuk masuk
+                <strong>Supabase Auth:</strong> Gunakan email dan password yang valid
               </p>
               <Button
                 type="button"
