@@ -178,8 +178,8 @@ export default function HomePage() {
             </span>
             <div className="flex flex-col sm:flex-row items-center justify-center mt-4 sm:mt-6 space-y-2 sm:space-y-0 sm:space-x-4">
               <span className="text-gray-700 text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">dengan</span>
-              <div className="flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl shadow-xl">
-                <span className="text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">AI</span>
+              <div className="flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl shadow-xl">
+                <span className="text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl py-3">AI</span>
               </div>
             </div>
           </h1>
