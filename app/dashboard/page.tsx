@@ -297,7 +297,7 @@ export default function DashboardPage() {
 
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
                         <div className="flex flex-wrap gap-2">
-                          {job.skills.map((skill, index) => (
+                          {job.skills.map((skill: string, index: number) => (
                             <Badge key={index} className="bg-sky-50 text-sky-600 border-sky-200">
                               {skill}
                             </Badge>
