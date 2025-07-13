@@ -13,7 +13,8 @@ import { Brain, MapPin, DollarSign, User, BookOpen, Clock, ArrowRight, Star, Upl
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import type { User as SupabaseUser } from "@supabase/supabase-js"
+import type { User as SupabaseUser } from "@supabase/supabase-js" // Kept from 'toriq' branch
+import { formatJobType } from "@/lib/utils" // Kept from 'main' branch
 
 export default function DashboardPage() {
   const { user, signOut }: { user: SupabaseUser | null, signOut: () => Promise<void> } = useAuth()
@@ -286,7 +287,7 @@ export default function DashboardPage() {
                               <span>{job.salary}</span>
                             </div>
                             <Badge variant="outline" className="border-emerald-200 text-emerald-600">
-                              {job.type}
+                              {formatJobType(job.type)}
                             </Badge>
                           </div>
                         </div>
@@ -298,7 +299,7 @@ export default function DashboardPage() {
 
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
                         <div className="flex flex-wrap gap-2">
-                          {job.skills.map((skill, index) => (
+                          {job.skills.map((skill: string, index: number) => (
                             <Badge key={index} className="bg-sky-50 text-sky-600 border-sky-200">
                               {skill}
                             </Badge>

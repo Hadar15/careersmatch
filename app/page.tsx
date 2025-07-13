@@ -1,7 +1,10 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { JobsSection } from "@/components/jobs-section"
+import { CoursesSection } from "@/components/courses-section"
 import {
   ArrowRight,
   Brain,
@@ -16,32 +19,42 @@ import {
   Star,
   Award,
   Globe,
+  Menu,
+  X,
 } from "lucide-react"
 import Link from "next/link"
+import { useState } from "react"
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="border-b border-sky-100 bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Brain className="w-6 h-6 text-white" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Brain className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+              <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
                 CareerMatch
               </span>
-              <div className="text-xs font-medium text-emerald-600">AI-Powered Career Platform</div>
+              <div className="text-xs font-medium text-emerald-600 hidden sm:block">AI-Powered Career Platform</div>
             </div>
           </div>
-          <nav className="hidden md:flex items-center space-x-8">
+          
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center space-x-8">
             <Link href="#features" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Fitur
             </Link>
             <Link href="#jobs" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Jobs
+            </Link>
+            <Link href="#courses" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+              Courses
             </Link>
             <Link href="#how-it-works" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Cara Kerja
@@ -51,7 +64,9 @@ export default function HomePage() {
               Untuk Indonesia
             </Badge>
           </nav>
-          <div className="flex items-center space-x-3">
+
+          {/* Desktop Buttons */}
+          <div className="hidden lg:flex items-center space-x-3">
             <Link href="/auth/login">
               <Button
                 variant="outline"
@@ -66,25 +81,94 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6 text-gray-600" />
+            ) : (
+              <Menu className="w-6 h-6 text-gray-600" />
+            )}
+          </button>
         </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-sky-100 bg-white/95 backdrop-blur-md">
+            <div className="container mx-auto px-4 py-4 space-y-4">
+              <nav className="flex flex-col space-y-4">
+                <Link 
+                  href="#features" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Fitur
+                </Link>
+                <Link 
+                  href="#jobs" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Jobs
+                </Link>
+                <Link 
+                  href="#courses" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Courses
+                </Link>
+                <Link 
+                  href="#how-it-works" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Cara Kerja
+                </Link>
+                <div className="flex items-center space-x-4 pt-4">
+                  <Link href="/auth/login" className="flex-1">
+                    <Button
+                      variant="outline"
+                      className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Masuk
+                    </Button>
+                  </Link>
+                  <Link href="/auth/register" className="flex-1">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Daftar
+                    </Button>
+                  </Link>
+                </div>
+              </nav>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24 px-4 relative overflow-hidden">
+      <section className="py-12 sm:py-16 md:py-24 px-4 relative overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0 bg-gradient-to-r from-sky-600/5 via-emerald-600/5 to-sky-600/5"></div>
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-sky-400/10 to-emerald-400/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-emerald-400/10 to-sky-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-r from-sky-400/10 to-emerald-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-r from-emerald-400/10 to-sky-400/10 rounded-full blur-3xl"></div>
 
         <div className="container mx-auto text-center relative z-10">
-          <div className="flex justify-center mb-8">
-            <Badge className="bg-gradient-to-r from-sky-50 to-emerald-50 text-sky-700 border-sky-200 px-6 py-3 text-sm font-medium shadow-sm">
-              <Award className="w-4 h-4 mr-2" />
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <Badge className="bg-gradient-to-r from-sky-50 to-emerald-50 text-sky-700 border-sky-200 px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium shadow-sm">
+              <Award className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
               Platform AI Terdepan untuk Karir Indonesia
             </Badge>
           </div>
 
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 sm:mb-8 leading-tight px-4">
             <span className="bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
               Temukan Karir
             </span>
@@ -92,35 +176,35 @@ export default function HomePage() {
             <span className="bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent">
               Impian Anda
             </span>
-            <div className="flex items-center justify-center mt-6">
-              <span className="text-gray-700 text-3xl md:text-4xl lg:text-5xl mr-4">dengan</span>
-              <div className="px-6 py-3 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl shadow-xl">
-                <span className="text-white font-bold text-3xl md:text-4xl lg:text-5xl">AI</span>
+            <div className="flex flex-col sm:flex-row items-center justify-center mt-4 sm:mt-6 space-y-2 sm:space-y-0 sm:space-x-4">
+              <span className="text-gray-700 text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">dengan</span>
+              <div className="flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl shadow-xl">
+                <span className="text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl py-3">AI</span>
               </div>
             </div>
           </h1>
 
-          <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed px-4 font-medium">
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 sm:mb-12 max-w-4xl mx-auto leading-relaxed px-4 font-medium">
             Platform AI yang menganalisis CV, kepribadian MBTI, dan mencocokkan Anda dengan
             <span className="text-sky-600 font-semibold"> peluang karir terbaik di Indonesia</span> dengan akurasi
             tinggi.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center px-4 mb-16">
-            <Link href="/auth/register">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 mb-12 sm:mb-16">
+            <Link href="/auth/register" className="w-full sm:w-auto">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-12 py-5 text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
+                className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
               >
                 Mulai Perjalanan Karir
-                <ArrowRight className="ml-3 w-6 h-6" />
+                <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6" />
               </Button>
             </Link>
-            <Link href="#jobs">
+            <Link href="#jobs" className="w-full sm:w-auto">
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full sm:w-auto border-2 border-sky-200 text-sky-600 hover:bg-sky-50 px-12 py-5 text-xl font-semibold bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                className="w-full sm:w-auto border-2 border-sky-200 text-sky-600 hover:bg-sky-50 px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 Lihat Jobs Terbaru
               </Button>
@@ -128,67 +212,72 @@ export default function HomePage() {
           </div>
 
           {/* Elegant Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 px-4">
-            <div className="text-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 hover:shadow-2xl transition-all duration-300">
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12 px-4">
+            <div className="text-center p-4 sm:p-6 md:p-8 bg-white/70 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl border border-sky-100 hover:shadow-2xl transition-all duration-300">
+              <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-2 sm:mb-3">
                 50K+
               </div>
-              <p className="text-base md:text-lg text-gray-600 font-medium">Profesional Sukses</p>
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 font-medium">Profesional Sukses</p>
             </div>
-            <div className="text-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-emerald-100 hover:shadow-2xl transition-all duration-300">
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent mb-3">
+            <div className="text-center p-4 sm:p-6 md:p-8 bg-white/70 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl border border-emerald-100 hover:shadow-2xl transition-all duration-300">
+              <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent mb-2 sm:mb-3">
                 98%
               </div>
-              <p className="text-base md:text-lg text-gray-600 font-medium">Akurasi AI</p>
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 font-medium">Akurasi AI</p>
             </div>
-            <div className="text-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 hover:shadow-2xl transition-all duration-300">
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+            <div className="text-center p-4 sm:p-6 md:p-8 bg-white/70 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl border border-sky-100 hover:shadow-2xl transition-all duration-300">
+              <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-2 sm:mb-3">
                 25K+
               </div>
-              <p className="text-base md:text-lg text-gray-600 font-medium">Lowongan Kerja</p>
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 font-medium">Lowongan Kerja</p>
             </div>
-            <div className="text-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-emerald-100 hover:shadow-2xl transition-all duration-300">
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent mb-3">
+            <div className="text-center p-4 sm:p-6 md:p-8 bg-white/70 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl border border-emerald-100 hover:shadow-2xl transition-all duration-300">
+              <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent mb-2 sm:mb-3">
                 99%
               </div>
-              <p className="text-base md:text-lg text-gray-600 font-medium">Kepuasan User</p>
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 font-medium">Kepuasan User</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Jobs Section from Talentics API */}
+      {/* Jobs Section from Remotive API */}
       <section id="jobs">
         <JobsSection />
       </section>
 
+      {/* Courses Section from Class Central API */}
+      <section id="courses">
+        <CoursesSection />
+      </section>
+
       {/* Features Section */}
-      <section id="features" className="py-20 md:py-28 px-4 bg-white/60 backdrop-blur-sm">
+      <section id="features" className="py-16 sm:py-20 md:py-28 px-4 bg-white/60 backdrop-blur-sm">
         <div className="container mx-auto">
-          <div className="text-center mb-16 md:mb-20">
-            <Badge className="mb-8 bg-gradient-to-r from-sky-50 to-emerald-50 text-sky-700 border-sky-200 px-6 py-3 font-medium">
-              <Star className="w-5 h-5 mr-2" />
+          <div className="text-center mb-12 sm:mb-16 md:mb-20">
+            <Badge className="mb-6 sm:mb-8 bg-gradient-to-r from-sky-50 to-emerald-50 text-sky-700 border-sky-200 px-4 sm:px-6 py-2 sm:py-3 font-medium">
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Fitur Unggulan
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent leading-tight pb-2">
               Teknologi AI Terdepan
             </h2>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">
               Platform lengkap dengan AI canggih untuk mengoptimalkan pencarian karir Anda
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10">
             <Card className="border-sky-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/80 backdrop-blur-sm group overflow-hidden">
-              <CardHeader className="p-8 relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-sky-100/50 to-emerald-100/50 rounded-full -translate-y-16 translate-x-16"></div>
-                <div className="w-16 h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
-                  <FileText className="w-8 h-8 text-white" />
+              <CardHeader className="p-6 sm:p-8 relative">
+                <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-sky-100/50 to-emerald-100/50 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16"></div>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
+                  <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sky-700 text-xl md:text-2xl font-bold mb-4 relative z-10">
+                <CardTitle className="text-sky-700 text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 relative z-10">
                   Analisis CV Cerdas
                 </CardTitle>
-                <CardDescription className="text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
+                <CardDescription className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
                   AI membaca dan memahami CV Anda secara mendalam, mengidentifikasi skill tersembunyi dan potensi karir
                   dengan akurasi tinggi
                 </CardDescription>
@@ -196,15 +285,15 @@ export default function HomePage() {
             </Card>
 
             <Card className="border-emerald-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/80 backdrop-blur-sm group overflow-hidden">
-              <CardHeader className="p-8 relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-100/50 to-sky-100/50 rounded-full -translate-y-16 translate-x-16"></div>
-                <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
-                  <Brain className="w-8 h-8 text-white" />
+              <CardHeader className="p-6 sm:p-8 relative">
+                <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-emerald-100/50 to-sky-100/50 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16"></div>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
+                  <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-emerald-700 text-xl md:text-2xl font-bold mb-4 relative z-10">
+                <CardTitle className="text-emerald-700 text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 relative z-10">
                   Tes Kepribadian MBTI
                 </CardTitle>
-                <CardDescription className="text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
+                <CardDescription className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
                   Analisis kepribadian mendalam untuk mencocokkan budaya kerja dan tipe pekerjaan yang sesuai dengan
                   karakter Anda
                 </CardDescription>
@@ -212,15 +301,15 @@ export default function HomePage() {
             </Card>
 
             <Card className="border-sky-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/80 backdrop-blur-sm group overflow-hidden">
-              <CardHeader className="p-8 relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-sky-100/50 to-emerald-100/50 rounded-full -translate-y-16 translate-x-16"></div>
-                <div className="w-16 h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
-                  <Target className="w-8 h-8 text-white" />
+              <CardHeader className="p-6 sm:p-8 relative">
+                <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-sky-100/50 to-emerald-100/50 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16"></div>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
+                  <Target className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sky-700 text-xl md:text-2xl font-bold mb-4 relative z-10">
+                <CardTitle className="text-sky-700 text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 relative z-10">
                   Smart Job Matching
                 </CardTitle>
-                <CardDescription className="text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
+                <CardDescription className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
                   Pencocokan pekerjaan dengan akurasi tinggi berdasarkan skill, personality, lokasi, dan preferensi
                   karir Anda
                 </CardDescription>
@@ -228,15 +317,15 @@ export default function HomePage() {
             </Card>
 
             <Card className="border-emerald-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/80 backdrop-blur-sm group overflow-hidden">
-              <CardHeader className="p-8 relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-100/50 to-sky-100/50 rounded-full -translate-y-16 translate-x-16"></div>
-                <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
-                  <TrendingUp className="w-8 h-8 text-white" />
+              <CardHeader className="p-6 sm:p-8 relative">
+                <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-emerald-100/50 to-sky-100/50 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16"></div>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
+                  <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-emerald-700 text-xl md:text-2xl font-bold mb-4 relative z-10">
+                <CardTitle className="text-emerald-700 text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 relative z-10">
                   Rekomendasi Course
                 </CardTitle>
-                <CardDescription className="text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
+                <CardDescription className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
                   Saran kursus untuk meningkatkan skill dan tracking progress pembelajaran dengan roadmap yang
                   terstruktur
                 </CardDescription>
@@ -244,32 +333,33 @@ export default function HomePage() {
             </Card>
 
             <Card className="border-sky-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/80 backdrop-blur-sm group overflow-hidden">
-              <CardHeader className="p-8 relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-sky-100/50 to-emerald-100/50 rounded-full -translate-y-16 translate-x-16"></div>
-                <div className="w-16 h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
-                  <MapPin className="w-8 h-8 text-white" />
+              <CardHeader className="p-6 sm:p-8 relative">
+                <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-sky-100/50 to-emerald-100/50 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16"></div>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
+                  <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sky-700 text-xl md:text-2xl font-bold mb-4 relative z-10">
-                  Filter Lokasi Indonesia
+                <CardTitle className="text-sky-700 text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 relative z-10">
+                  Lokasi Fleksibel
                 </CardTitle>
-                <CardDescription className="text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
-                  Temukan pekerjaan berdasarkan lokasi preferensi di seluruh Indonesia dengan data yang akurat dan
-                  terkini
+                <CardDescription className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
+                  Pencarian pekerjaan berdasarkan lokasi, remote work, atau hybrid dengan filter yang fleksibel
+                  sesuai kebutuhan Anda
                 </CardDescription>
               </CardHeader>
             </Card>
 
             <Card className="border-emerald-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/80 backdrop-blur-sm group overflow-hidden">
-              <CardHeader className="p-8 relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-100/50 to-sky-100/50 rounded-full -translate-y-16 translate-x-16"></div>
-                <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
-                  <DollarSign className="w-8 h-8 text-white" />
+              <CardHeader className="p-6 sm:p-8 relative">
+                <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-emerald-100/50 to-sky-100/50 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16"></div>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 relative z-10">
+                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-emerald-700 text-xl md:text-2xl font-bold mb-4 relative z-10">
-                  Info Gaji & Kontak
+                <CardTitle className="text-emerald-700 text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 relative z-10">
+                  Keamanan Data
                 </CardTitle>
-                <CardDescription className="text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
-                  Dapatkan estimasi gaji yang akurat dan informasi kontak langsung untuk melamar pekerjaan impian Anda
+                <CardDescription className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed relative z-10">
+                  Data pribadi dan CV Anda dilindungi dengan enkripsi tingkat tinggi dan tidak akan dibagikan
+                  tanpa izin
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -285,7 +375,7 @@ export default function HomePage() {
               <Zap className="w-5 h-5 mr-2" />
               Proses Mudah
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent leading-tight pb-2">
               4 Langkah Menuju Karir Impian
             </h2>
             <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">
