@@ -32,8 +32,15 @@ export function JobsSection() {
         job.url && 
         !job.url.includes('example.com') && 
         job.company_name && 
-        !job.company_name.includes('Indonesia') &&
-        job.id > 1000 // Real Remotive jobs typically have higher IDs
+        !job.company_name.includes('TechCorp Indonesia') &&
+        !job.company_name.includes('Digital Solutions') &&
+        !job.company_name.includes('Creative Studio') &&
+        !job.company_name.includes('AI Research Lab') &&
+        !job.company_name.includes('CloudTech Solutions') &&
+        !job.company_name.includes('Startup Indonesia') &&
+        !job.company_name.includes('App Studio') &&
+        !job.company_name.includes('Quality Assurance Inc') &&
+        !job.company_name.includes('IT Solutions')
       )
 
       if (isRealRemotiveData) {
