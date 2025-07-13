@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/mock-auth"
+import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Brain, Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -57,6 +58,34 @@ export default function LoginPage() {
   const fillDemoCredentials = () => {
     setEmail("demo@careermatch.ai")
     setPassword("demo123")
+  }
+
+  // Google OAuth login
+  const handleGoogleLogin = async () => {
+    setLoading(true)
+    setError("")
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ provider: "google" })
+      if (error) {
+        setError(error.message)
+        toast({
+          title: "Login Google Gagal",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        // Tunggu session berubah, lalu redirect ke dashboard
+        supabase.auth.onAuthStateChange((_event, session) => {
+          if (session) {
+            router.push("/dashboard")
+          }
+        })
+      }
+    } catch (err) {
+      setError("Terjadi kesalahan Google OAuth")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -168,6 +197,22 @@ export default function LoginPage() {
                 {loading ? "Memproses..." : "Masuk"}
               </Button>
             </form>
+
+            <div className="my-6 flex items-center justify-center gap-2">
+              <span className="h-px flex-1 bg-gray-200" />
+              <span className="text-gray-400 text-sm">atau</span>
+              <span className="h-px flex-1 bg-gray-200" />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-gray-200 text-gray-700 hover:bg-gray-50 bg-white"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+            >
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.7 1.22 9.19 3.23l6.85-6.85C36.68 2.64 30.74 0 24 0 14.82 0 6.71 5.8 2.69 14.09l7.98 6.19C12.36 13.19 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.55c0-1.64-.15-3.22-.42-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.65 7.01l7.19 5.6C43.93 37.13 46.1 31.36 46.1 24.55z"/><path fill="#FBBC05" d="M10.67 28.28c-1.01-2.99-1.01-6.19 0-9.18l-7.98-6.19C.64 16.36 0 20.09 0 24c0 3.91.64 7.64 1.69 11.09l7.98-6.19z"/><path fill="#EA4335" d="M24 48c6.74 0 12.68-2.24 16.98-6.09l-7.19-5.6c-2.01 1.35-4.59 2.14-7.79 2.14-6.26 0-11.64-3.69-13.33-8.59l-7.98 6.19C6.71 42.2 14.82 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></g></svg>
+              Masuk dengan Google
+            </Button>
 
             <div className="mt-6 text-center">
               <p className="text-gray-600">
