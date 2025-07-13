@@ -8,6 +8,7 @@ import { BookOpen, Calendar, ExternalLink, Heart, Star, GraduationCap } from "lu
 import type { Course } from "@/app/api/courses/classcentral/route"
 import { useState } from "react"
 
+// another random comment
 interface CourseCardProps {
   course: Course
   compact?: boolean
