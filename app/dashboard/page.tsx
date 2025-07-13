@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/mock-auth"
+import { useAuth } from "@/lib/auth"
 import { getUserProfile, mockJobListings, mockCourses, mockSkillGaps, type UserProfile } from "@/lib/mock-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,10 +13,11 @@ import { Brain, MapPin, DollarSign, User, BookOpen, Clock, ArrowRight, Star, Upl
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { formatJobType } from "@/lib/utils"
+import type { User as SupabaseUser } from "@supabase/supabase-js" // Kept from 'toriq' branch
+import { formatJobType } from "@/lib/utils" // Kept from 'main' branch
 
 export default function DashboardPage() {
-  const { user, signOut } = useAuth()
+  const { user, signOut }: { user: SupabaseUser | null, signOut: () => Promise<void> } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -33,8 +34,8 @@ export default function DashboardPage() {
         // Set default profile if there's an error
         setProfile({
           id: user.id,
-          email: user.email,
-          full_name: user.full_name,
+          email: user.email || "",
+          full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
           phone: null,
           location: null,
           professional_summary: null,
@@ -146,7 +147,7 @@ export default function DashboardPage() {
           {/* Welcome Section */}
           <div className="mb-6 md:mb-8">
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-              Selamat Datang, {profile?.full_name || user?.full_name || "User"}!
+              Selamat Datang, {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}!
             </h1>
             <p className="text-gray-600">Dashboard lengkap untuk mengelola pencarian karir Anda</p>
           </div>
