@@ -17,6 +17,7 @@ interface CourseCardProps {
 export function CourseCard({ course, compact = false }: CourseCardProps) {
   const [isSaved, setIsSaved] = useState(false)
 
+  // yet another random comment
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
