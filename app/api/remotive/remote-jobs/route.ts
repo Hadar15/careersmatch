@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  // Access the OpenAI API key from environment variables
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  // You can now use openaiApiKey in your server-side logic
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
