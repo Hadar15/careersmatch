@@ -1,4 +1,4 @@
-// Komentar random: trigger perubahan untuk cek deploy Vercel
+// Komentar random: update untuk tes deploy Vercel terbaru
 import { createClient } from "@supabase/supabase-js"
 
 /**
