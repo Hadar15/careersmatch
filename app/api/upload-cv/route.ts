@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
 
     // 3. Upload the file to Supabase Storage
     const arrayBuffer = await fileObj.arrayBuffer();
+    if (!arrayBuffer || (arrayBuffer.byteLength !== undefined && arrayBuffer.byteLength === 0)) {
+      return NextResponse.json({ error: 'Uploaded file is empty or could not be read.' }, { status: 400 });
+    }
     const filePath = `resumes/${userId}/${fileName}`;
     const { error: uploadError } = await supabase.storage.from('resumes').upload(filePath, arrayBuffer, {
       contentType: fileObj.type,
@@ -48,10 +51,18 @@ export async function POST(request: NextRequest) {
     // 4. Extract text from the CV
     let extractedText = '';
     if (fileExt === 'pdf') {
-      extractedText = (await pdfParse(Buffer.from(arrayBuffer))).text;
+      try {
+        extractedText = (await pdfParse(Buffer.from(arrayBuffer))).text;
+      } catch (err: any) {
+        return NextResponse.json({ error: 'Failed to parse PDF file', details: err.message }, { status: 500 });
+      }
     } else if (fileExt === 'docx') {
-      const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
-      extractedText = result.value;
+      try {
+        const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
+        extractedText = result.value;
+      } catch (err: any) {
+        return NextResponse.json({ error: 'Failed to parse DOCX file', details: err.message }, { status: 500 });
+      }
     }
     if (!extractedText.trim()) {
       return NextResponse.json({ error: 'Failed to extract text from CV.' }, { status: 500 });
