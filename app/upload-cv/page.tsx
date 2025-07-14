@@ -167,12 +167,19 @@ export default function UploadCVPage() {
     }
     setIsAnalyzing(true);
     try {
-      // Upload CV to Supabase Storage
-      const fileExt = cvFile.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from("resumes").upload(filePath, cvFile);
-      if (uploadError) throw uploadError;
-      // Update or insert profile
+      // Upload CV and userId to the API route for processing
+      const formData = new FormData();
+      formData.append('file', cvFile);
+      formData.append('userId', user.id);
+      const response = await fetch('/api/upload-cv', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Terjadi kesalahan saat upload.');
+      }
+      // Update or insert profile (as before)
       console.log('[DEBUG] Upserting profile with location:', personalInfo.location);
       const { error: upsertError } = await supabase
         .from("profiles")
@@ -187,7 +194,7 @@ export default function UploadCVPage() {
           updated_at: new Date().toISOString(),
         }, { onConflict: "id" });
       if (upsertError) throw upsertError;
-      setSuccess("CV dan profil berhasil diupload!");
+      setSuccess("CV dan profil berhasil diupload dan dianalisis!");
       setAnalysisComplete(true);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat upload.");
