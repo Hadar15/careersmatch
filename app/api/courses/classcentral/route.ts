@@ -11,7 +11,22 @@ export type Course = {
   provider?: string
 }
 
+// Simple in-memory cache (valid for 1 hour)
+let cachedCourses: Course[] = [];
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
 export async function GET() {
+  // If cache is valid, return cached data
+  if (cachedCourses.length > 0 && Date.now() - cacheTimestamp < CACHE_DURATION) {
+    console.log('✅ Returning courses from cache');
+    return NextResponse.json({
+      courses: cachedCourses,
+      dataSource: 'cache',
+      timestamp: new Date().toISOString()
+    })
+  }
+
   try {
     console.log("🌐 Server-side fetching from Class Central RSS feeds...")
     
@@ -160,6 +175,10 @@ export async function GET() {
         }
       ]
     }
+
+    // Update cache
+    cachedCourses = courses;
+    cacheTimestamp = Date.now();
 
     console.log("📊 Server-side API response:", {
       courseCount: courses.length,
