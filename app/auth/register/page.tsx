@@ -78,7 +78,7 @@ export default function RegisterPage() {
             title: "Registrasi Berhasil",
             description: "Akun Anda telah dibuat. Selamat datang!",
           })
-          router.push("/dashboard")
+          router.push("/")
         }
       }
     } catch (err) {
@@ -105,7 +105,7 @@ export default function RegisterPage() {
         // Tunggu session berubah, lalu redirect ke dashboard
         supabase.auth.onAuthStateChange((_event, session) => {
           if (session) {
-            router.push("/dashboard")
+            window.location.href = "https://careersmatchai.vercel.app/"
           }
         })
       }

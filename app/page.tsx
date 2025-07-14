@@ -30,17 +30,6 @@ export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const router = useRouter();
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const hash = window.location.hash;
-      console.log("HASH:", hash);
-      if (hash.includes("access_token")) {
-        console.log("Redirecting to /dashboard");
-        router.replace("/dashboard");
-      }
-    }
-  }, [router]);
-
   return (
     <div className="min-h-screen">
       {/* Header */}

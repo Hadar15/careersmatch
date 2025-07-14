@@ -45,7 +45,7 @@ export default function LoginPage() {
           title: "Login Berhasil",
           description: "Selamat datang kembali!",
         })
-        router.push("/dashboard")
+        window.location.href = "https://careersmatchai.vercel.app/"
       }
     } catch (err) {
       setError("Terjadi kesalahan yang tidak terduga")
@@ -77,7 +77,7 @@ export default function LoginPage() {
         // Tunggu session berubah, lalu redirect ke dashboard
         supabase.auth.onAuthStateChange((_event, session) => {
           if (session) {
-            router.push("/dashboard")
+            window.location.href = "https://careersmatchai.vercel.app/"
           }
         })
       }
