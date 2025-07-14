@@ -23,10 +23,21 @@ import {
   X,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash.includes("access_token")) {
+        router.replace("/dashboard");
+      }
+    }
+  }, [router]);
 
   return (
     <div className="min-h-screen">
