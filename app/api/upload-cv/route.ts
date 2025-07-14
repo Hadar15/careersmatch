@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
-import { OpenAIApi, Configuration } from 'openai';
+import OpenAI from 'openai';
+// @ts-ignore
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+
+// Helper to extract text from PDF using pdfjs-dist
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  const loadingTask = pdfjsLib.getDocument({ data: buffer });
+  const pdf = await loadingTask.promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((item: any) => item.str).join(' ') + '\n';
+  }
+  return text;
+}
 
 // Initialize Supabase client with service role key (server-side only)
 const supabase = createClient(
@@ -11,9 +25,7 @@ const supabase = createClient(
 );
 
 // Initialize OpenAI client
-const openai = new OpenAIApi(
-  new Configuration({ apiKey: process.env.OPENAI_API_KEY })
-);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,7 +64,7 @@ export async function POST(request: NextRequest) {
     let extractedText = '';
     if (fileExt === 'pdf') {
       try {
-        extractedText = (await pdfParse(Buffer.from(arrayBuffer))).text;
+        extractedText = await extractTextFromPDF(Buffer.from(arrayBuffer));
       } catch (err: any) {
         return NextResponse.json({ error: 'Failed to parse PDF file', details: err.message }, { status: 500 });
       }
@@ -82,7 +94,7 @@ CV Content:
 """
 ${extractedText}
 """`;
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: 'You are an expert CV parser for ATS systems.' },
@@ -91,7 +103,7 @@ ${extractedText}
       temperature: 0.2,
       max_tokens: 1000,
     });
-    const aiResponse = completion.data.choices[0]?.message?.content;
+    const aiResponse = completion.choices[0]?.message?.content;
     let extractedJson;
     try {
       extractedJson = JSON.parse(aiResponse || '{}');
