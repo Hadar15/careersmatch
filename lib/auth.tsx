@@ -2,25 +2,35 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
+import type { User, Session } from "@supabase/supabase-js"
 
-const AuthContext = createContext(null)
+interface AuthContextType {
+  user: User | null
+  session: Session | null
+  loading: boolean
+  signIn: (email: string, password: string) => Promise<any>
+  signUp: (email: string, password: string, fullName: string) => Promise<any>
+  signOut: () => Promise<void>
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [session, setSession] = useState(null)
+const AuthContext = createContext<AuthContextType | null>(null)
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const getSession = async () => {
       const { data } = await supabase.auth.getSession()
-      setSession(data.session)
-      setUser(data.session?.user ?? null)
+      setSession(data.session as Session | null)
+      setUser(data.session?.user as User | null ?? null)
       setLoading(false)
     }
     getSession()
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
+      setSession(session as Session | null)
+      setUser(session?.user as User | null ?? null)
     })
     return () => {
       listener.subscription.unsubscribe()
@@ -28,12 +38,12 @@ export function AuthProvider({ children }) {
   }, [])
 
   // Sign in with email/password
-  const signIn = async (email, password) => {
+  const signIn = async (email: string, password: string) => {
     return await supabase.auth.signInWithPassword({ email, password })
   }
 
   // Sign up with email/password
-  const signUp = async (email, password, fullName) => {
+  const signUp = async (email: string, password: string, fullName: string) => {
     return await supabase.auth.signUp({
       email,
       password,
@@ -51,7 +61,7 @@ export function AuthProvider({ children }) {
     setSession(null)
   }
 
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
     loading,

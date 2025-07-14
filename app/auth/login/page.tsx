@@ -1,9 +1,10 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth"
+import type { User as SupabaseUser, Session } from "@supabase/supabase-js"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,9 +22,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const { signIn } = useAuth()
+  const auth = useAuth()
+  const signIn = auth.signIn
+  const user = auth.user
+  const authLoading = auth.loading
   const router = useRouter()
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/dashboard")
+    }
+  }, [user, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,12 +44,28 @@ export default function LoginPage() {
       const { error } = await signIn(email, password)
 
       if (error) {
-        setError(error.message)
-        toast({
-          title: "Login Gagal",
-          description: error.message,
-          variant: "destructive",
-        })
+        // Deteksi error password salah
+        const msg = error.message.toLowerCase()
+        const code = error.code?.toLowerCase?.() || ""
+        if (
+          code === "invalid_login_credentials" ||
+          msg.includes("invalid login credentials") ||
+          msg.includes("invalid password")
+        ) {
+          setError("Password yang anda masukkan salah, silahkan masukkan password dengan benar")
+          toast({
+            title: "Login Gagal",
+            description: "Password yang anda masukkan salah, silahkan masukkan password dengan benar",
+            variant: "destructive",
+          })
+        } else {
+          setError(error.message)
+          toast({
+            title: "Login Gagal",
+            description: error.message,
+            variant: "destructive",
+          })
+        }
       } else {
         toast({
           title: "Login Berhasil",
@@ -74,12 +100,33 @@ export default function LoginPage() {
           variant: "destructive",
         })
       } else {
-        // Tunggu session berubah, lalu redirect ke dashboard
-        supabase.auth.onAuthStateChange((_event, session) => {
-          if (session) {
-            router.push("/dashboard")
+        // Setelah login Google, tunggu session update, lalu cek profil
+        const checkProfile = async () => {
+          let tries = 0
+          let currentUser = null
+          while (!currentUser && tries < 10) {
+            await new Promise((r) => setTimeout(r, 500))
+            currentUser = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null
+            tries++
           }
-        })
+          if (!currentUser) {
+            setError("Gagal mendapatkan user Google. Coba lagi.")
+            setLoading(false)
+            return
+          }
+          // Cek profil di Supabase
+          const { data } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", currentUser.id)
+            .single()
+          if (!data || !data.full_name) {
+            router.replace("/profile/edit")
+          } else {
+            router.replace("/dashboard")
+          }
+        }
+        checkProfile()
       }
     } catch (err) {
       setError("Terjadi kesalahan Google OAuth")

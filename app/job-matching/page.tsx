@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,8 +23,10 @@ import {
   TrendingUp,
   Shield,
   ArrowRight,
+  User,
 } from "lucide-react"
 import Link from "next/link"
+import { getCVAnalysis, getMBTIResult } from "@/lib/mock-data"
 
 const jobListings = [
   {
@@ -149,12 +151,40 @@ export default function JobMatchingPage() {
   const [industryFilter, setIndustryFilter] = useState("All")
   const [salaryRange, setSalaryRange] = useState([10])
   const [savedJobs, setSavedJobs] = useState<number[]>([])
+  const [aiSkills, setAiSkills] = useState<string[]>([])
+  const [aiIndustries, setAiIndustries] = useState<string[]>([])
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Ambil hasil analisis AI dari localStorage
+    const cv = getCVAnalysis()
+    const mbti = getMBTIResult()
+    if (!cv || !mbti) {
+      setAiError("Silakan upload CV dan selesaikan tes MBTI untuk hasil job matching yang akurat.")
+      setLoading(false)
+      return
+    }
+    setAiSkills(cv.skills || [])
+    setAiIndustries(cv.industries || [])
+    setLoading(false)
+  }, [])
 
   const toggleSaveJob = (jobId: number) => {
     setSavedJobs((prev) => (prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]))
   }
 
-  const filteredJobs = jobListings.filter((job) => {
+  // Filter jobs by AI skills/industries if available
+  const aiFilteredJobs = aiSkills.length > 0 || aiIndustries.length > 0
+    ? jobListings.filter((job) => {
+        const skillMatch = aiSkills.length === 0 || job.skills.some((s) => aiSkills.includes(s))
+        const industryMatch = aiIndustries.length === 0 || aiIndustries.includes(job.industry)
+        return skillMatch && industryMatch
+      })
+    : jobListings
+
+  // Apply user filters on top of AI filter
+  const filteredJobs = aiFilteredJobs.filter((job) => {
     const matchesSearch =
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -162,7 +192,6 @@ export default function JobMatchingPage() {
     const matchesLocation = locationFilter === "All" || job.location === locationFilter
     const matchesType = typeFilter === "All" || job.type === typeFilter
     const matchesIndustry = industryFilter === "All" || job.industry === industryFilter
-
     return matchesSearch && matchesLocation && matchesType && matchesIndustry
   })
 
@@ -172,6 +201,21 @@ export default function JobMatchingPage() {
     if (!a.featured && b.featured) return 1
     return b.match - a.match
   })
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
+        <Card className="border-sky-100 shadow-xl">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <User className="w-8 h-8 text-white" />
+            </div>
+            <p className="text-lg font-medium text-gray-700">Memuat job matching...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
@@ -226,6 +270,21 @@ export default function JobMatchingPage() {
           <p className="text-xl text-gray-600 font-medium">
             {filteredJobs.length} pekerjaan ditemukan berdasarkan analisis AI mendalam profil Anda
           </p>
+          {aiError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-4">
+              {aiError}
+            </div>
+          )}
+          {aiSkills.length > 0 && (
+            <div className="mb-2 text-sm text-gray-600">
+              <span className="font-semibold text-sky-700">AI Skills:</span> {aiSkills.join(", ")}
+            </div>
+          )}
+          {aiIndustries.length > 0 && (
+            <div className="mb-2 text-sm text-gray-600">
+              <span className="font-semibold text-emerald-700">AI Industries:</span> {aiIndustries.join(", ")}
+            </div>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-4 gap-8">
@@ -464,6 +523,13 @@ export default function JobMatchingPage() {
                         Lamar Sekarang
                         <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-4">
+                    <div className="text-sm text-gray-500">
+                      {/* Reasoning AI (mock) */}
+                      <span className="font-semibold text-sky-700">AI Reasoning:</span> Pekerjaan ini cocok karena skill dan industri Anda sesuai hasil analisis AI.
                     </div>
                   </div>
                 </CardContent>

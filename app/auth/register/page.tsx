@@ -58,13 +58,49 @@ export default function RegisterPage() {
       const { data, error } = await signUp(email, password, fullName)
 
       if (error) {
-        setError(error.message)
+        // Deteksi error email sudah terdaftar (pakai error.code jika ada)
+        const msg = error.message.toLowerCase()
+        const code = error.code?.toLowerCase?.() || ""
+        if (
+          code === "user_already_exists" ||
+          code === "email_exists" ||
+          msg.includes("already registered") ||
+          msg.includes("user already registered") ||
+          msg.includes("duplicate key") ||
+          (msg.includes("email") && msg.includes("exists"))
+        ) {
+          setError("Email sudah terdaftar, silakan login dengan email tersebut.")
+          toast({
+            title: "Email sudah terdaftar",
+            description: "Silakan login dengan email tersebut.",
+            variant: "destructive",
+          })
+          setLoading(false)
+          return
+        } else {
+          setError(error.message)
+          toast({
+            title: "Registrasi Gagal",
+            description: error.message,
+            variant: "destructive",
+          })
+          setLoading(false)
+          return
+        }
+      }
+      // Tambahan: jika data.user ada tapi user belum terverifikasi, anggap email sudah terdaftar
+      if (data?.user && !data.user.confirmed_at) {
+        setError("Email sudah terdaftar, silakan login dengan email tersebut.")
         toast({
-          title: "Registrasi Gagal",
-          description: error.message,
+          title: "Email sudah terdaftar",
+          description: "Silakan login dengan email tersebut.",
           variant: "destructive",
         })
-      } else {
+        setLoading(false)
+        return
+      }
+
+      if (data?.user || !data?.user) {
         // Cek apakah user perlu verifikasi email
         if (!data?.user || !data.user.confirmed_at) {
           setVerificationSent(true)

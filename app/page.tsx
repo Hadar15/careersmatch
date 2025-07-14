@@ -37,13 +37,13 @@ export default function HomePage() {
             </div>
           </div>
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="#features" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+            <Link href="/auth/login" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Fitur
             </Link>
-            <Link href="#jobs" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+            <Link href="/auth/login" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Jobs
             </Link>
-            <Link href="#how-it-works" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+            <Link href="/auth/login" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Cara Kerja
             </Link>
             <Badge className="bg-gradient-to-r from-emerald-100 to-sky-100 text-emerald-700 border-emerald-200">
@@ -107,24 +107,7 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center px-4 mb-16">
-            <Link href="/auth/register">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-12 py-5 text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
-              >
-                Mulai Perjalanan Karir
-                <ArrowRight className="ml-3 w-6 h-6" />
-              </Button>
-            </Link>
-            <Link href="#jobs">
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto border-2 border-sky-200 text-sky-600 hover:bg-sky-50 px-12 py-5 text-xl font-semibold bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                Lihat Jobs Terbaru
-              </Button>
-            </Link>
+            {/* Semua tombol di landing page dihilangkan sesuai permintaan */}
           </div>
 
           {/* Elegant Stats */}
@@ -155,11 +138,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Jobs Section from Talentics API */}
-      <section id="jobs">
-        <JobsSection />
       </section>
 
       {/* Features Section */}

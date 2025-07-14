@@ -1,25 +1,30 @@
 "use client"
 
 import type React from "react"
+import type { User as SupabaseUser } from "@supabase/supabase-js"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/mock-auth"
+import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
-import { Upload, FileText, Brain, CheckCircle, ArrowRight, ArrowLeft } from "lucide-react"
+import { Upload, FileText, Brain, CheckCircle, ArrowRight, ArrowLeft, Briefcase, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import * as pdfjsLib from "pdfjs-dist/build/pdf"
+import "pdfjs-dist/build/pdf.worker.entry"
+import { useRouter } from "next/navigation"
 
 export default function UploadCVPage() {
-  const { user } = useAuth()
+  const { user }: { user: SupabaseUser | null } = useAuth()
   const { toast } = useToast()
   const [step, setStep] = useState(1)
   const [cvFile, setCvFile] = useState<File | null>(null)
+  const [mbtiFile, setMbtiFile] = useState<File | null>(null)
   const [personalInfo, setPersonalInfo] = useState({
     name: "",
     email: user?.email || "",
@@ -31,6 +36,11 @@ export default function UploadCVPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisComplete, setAnalysisComplete] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<any>(null)
+  const [aiResult, setAiResult] = useState<any>(null)
+  const [analyzing, setAnalyzing] = useState(false)
+  const cvFileRef = useRef<File | null>(null)
+  const mbtiFileRef = useRef<File | null>(null)
+  const router = useRouter()
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -159,6 +169,42 @@ export default function UploadCVPage() {
   }
 
   const progressValue = (step / 3) * 100
+
+  // Helper: extract text from PDF file
+  async function extractTextFromPDF(file: File): Promise<string> {
+    const arrayBuffer = await file.arrayBuffer()
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+    const pdf = await loadingTask.promise
+    let text = ""
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i)
+      const content = await page.getTextContent()
+      text += content.items.map((item: any) => item.str).join(" ") + "\n"
+    }
+    return text
+  }
+
+  // Handler: after both files uploaded, run AI analysis
+  const handleAnalyzeAI = async () => {
+    if (!cvFile || !mbtiFile) return
+    setAnalyzing(true)
+    setAiResult(null)
+    try {
+      const cvText = await extractTextFromPDF(cvFile)
+      const mbtiText = await extractTextFromPDF(mbtiFile)
+      const res = await fetch("/api/analyze-cv-mbti", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cvText, mbtiText })
+      })
+      const data = await res.json()
+      setAiResult(data.result)
+    } catch (err) {
+      setAiResult({ error: "Gagal analisis AI" })
+    } finally {
+      setAnalyzing(false)
+    }
+  }
 
   return (
     <AuthGuard>
@@ -450,6 +496,54 @@ export default function UploadCVPage() {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* AI Analysis Result */}
+          {analyzing && <div className="mt-6 text-center text-blue-600">Analisis AI sedang diproses...</div>}
+          {aiResult && (
+            <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <h3 className="font-bold text-lg mb-2 text-emerald-700">Hasil Analisis AI</h3>
+              {aiResult.error && <div className="text-red-600">{aiResult.error}</div>}
+              {aiResult.data && (
+                <>
+                  <div><strong>TTL:</strong> {aiResult.data.ttl}</div>
+                  <div><strong>Pendidikan:</strong> {aiResult.data.pendidikan}</div>
+                  <div><strong>Pengalaman:</strong> {aiResult.data.pengalaman}</div>
+                  <div><strong>Skills:</strong> {aiResult.data.skills?.join(", ")}</div>
+                </>
+              )}
+              {aiResult.kelengkapan && aiResult.kelengkapan.length > 0 && (
+                <div className="mt-2 text-yellow-700"><strong>Data kurang:</strong> {aiResult.kelengkapan.join(", ")}</div>
+              )}
+              {aiResult.rekomendasi_pekerjaan && (
+                <div className="mt-2">
+                  <strong>Rekomendasi Pekerjaan:</strong>
+                  <ul className="list-disc ml-6">
+                    {aiResult.rekomendasi_pekerjaan.map((r: any, i: number) => (
+                      <li key={i}>{r.pekerjaan} ({r.persentase}%) - {r.alasan}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {aiResult.saran && <div className="mt-2"><strong>Saran:</strong> {aiResult.saran}</div>}
+              {aiResult.rekomendasi_skill && aiResult.rekomendasi_skill.length > 0 && (
+                <div className="mt-2"><strong>Rekomendasi Skill/Course:</strong> {aiResult.rekomendasi_skill.join(", ")}</div>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href="/job-matching">
+                  <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-semibold shadow">
+                    <Briefcase className="mr-2 w-4 h-4" />
+                    Cari Lowongan Kerja
+                  </Button>
+                </Link>
+                <Link href="/skill-upgrade">
+                  <Button className="bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white font-semibold shadow">
+                    <BookOpen className="mr-2 w-4 h-4" />
+                    Upgrade Skill
+                  </Button>
+                </Link>
+              </div>
+            </div>
           )}
         </div>
       </div>

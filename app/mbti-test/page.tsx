@@ -8,72 +8,75 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Brain, ArrowRight, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
+import { useToast } from "@/hooks/use-toast"
 
 const mbtiQuestions = [
-  {
-    id: 1,
-    question: "Dalam situasi sosial, Anda lebih suka:",
-    options: [
-      { value: "E", text: "Berinteraksi dengan banyak orang dan menjadi pusat perhatian" },
-      { value: "I", text: "Berbicara dengan beberapa orang yang sudah Anda kenal baik" },
-    ],
-  },
-  {
-    id: 2,
-    question: "Ketika membuat keputusan, Anda lebih mengandalkan:",
-    options: [
-      { value: "S", text: "Fakta konkret dan pengalaman praktis" },
-      { value: "N", text: "Intuisi dan kemungkinan masa depan" },
-    ],
-  },
-  {
-    id: 3,
-    question: "Dalam menyelesaikan masalah, Anda lebih suka:",
-    options: [
-      { value: "T", text: "Menganalisis secara logis dan objektif" },
-      { value: "F", text: "Mempertimbangkan dampak pada orang lain dan nilai-nilai" },
-    ],
-  },
-  {
-    id: 4,
-    question: "Dalam mengatur hidup, Anda lebih suka:",
-    options: [
-      { value: "J", text: "Membuat rencana dan mengikuti jadwal yang terstruktur" },
-      { value: "P", text: "Tetap fleksibel dan terbuka terhadap perubahan" },
-    ],
-  },
-  {
-    id: 5,
-    question: "Ketika bekerja dalam tim, Anda lebih suka:",
-    options: [
-      { value: "E", text: "Brainstorming dengan diskusi terbuka dan energik" },
-      { value: "I", text: "Merefleksikan ide secara mendalam sebelum berbagi" },
-    ],
-  },
-  {
-    id: 6,
-    question: "Dalam mempelajari hal baru, Anda lebih suka:",
-    options: [
-      { value: "S", text: "Mempelajari detail dan langkah-langkah praktis" },
-      { value: "N", text: "Memahami konsep besar dan pola keseluruhan" },
-    ],
-  },
-  {
-    id: 7,
-    question: "Ketika memberikan feedback, Anda lebih fokus pada:",
-    options: [
-      { value: "T", text: "Analisis objektif tentang apa yang bisa diperbaiki" },
-      { value: "F", text: "Cara menyampaikan yang tidak menyakiti perasaan" },
-    ],
-  },
-  {
-    id: 8,
-    question: "Dalam mengelola proyek, Anda lebih suka:",
-    options: [
-      { value: "J", text: "Membuat timeline yang jelas dan mengikuti deadline" },
-      { value: "P", text: "Menyesuaikan pendekatan berdasarkan situasi yang berkembang" },
-    ],
-  },
+  // E/I
+  { id: 1, question: "Saya lebih suka...", options: [{ value: "E", text: "Berada di tengah keramaian" }, { value: "I", text: "Berada di tempat tenang" }] },
+  { id: 2, question: "Saya lebih nyaman...", options: [{ value: "E", text: "Bersosialisasi dengan banyak orang" }, { value: "I", text: "Bersama beberapa teman dekat" }] },
+  { id: 3, question: "Saya lebih sering...", options: [{ value: "E", text: "Berbicara daripada mendengarkan" }, { value: "I", text: "Mendengarkan daripada berbicara" }] },
+  { id: 4, question: "Saya merasa energik setelah...", options: [{ value: "E", text: "Bertemu banyak orang" }, { value: "I", text: "Menghabiskan waktu sendiri" }] },
+  { id: 5, question: "Saya lebih suka...", options: [{ value: "E", text: "Kegiatan kelompok" }, { value: "I", text: "Kegiatan individu" }] },
+  { id: 6, question: "Saya lebih mudah...", options: [{ value: "E", text: "Beradaptasi di lingkungan baru" }, { value: "I", text: "Membutuhkan waktu untuk menyesuaikan diri" }] },
+  { id: 7, question: "Saya lebih suka...", options: [{ value: "E", text: "Bicara langsung" }, { value: "I", text: "Menulis atau berpikir dulu" }] },
+  { id: 8, question: "Saya lebih sering...", options: [{ value: "E", text: "Mengambil inisiatif" }, { value: "I", text: "Menunggu kesempatan" }] },
+  { id: 9, question: "Saya lebih suka...", options: [{ value: "E", text: "Bertemu orang baru" }, { value: "I", text: "Bersama orang yang sudah dikenal" }] },
+  { id: 10, question: "Saya lebih nyaman...", options: [{ value: "E", text: "Berbicara di depan umum" }, { value: "I", text: "Berbicara dalam kelompok kecil" }] },
+  { id: 11, question: "Saya lebih suka...", options: [{ value: "E", text: "Aktivitas spontan" }, { value: "I", text: "Aktivitas terencana" }] },
+  { id: 12, question: "Saya lebih sering...", options: [{ value: "E", text: "Berbagi ide" }, { value: "I", text: "Menyimpan ide sendiri" }] },
+  { id: 13, question: "Saya lebih suka...", options: [{ value: "E", text: "Diskusi kelompok" }, { value: "I", text: "Refleksi pribadi" }] },
+  { id: 14, question: "Saya lebih suka...", options: [{ value: "E", text: "Lingkungan ramai" }, { value: "I", text: "Lingkungan tenang" }] },
+  { id: 15, question: "Saya lebih suka...", options: [{ value: "E", text: "Banyak aktivitas" }, { value: "I", text: "Sedikit aktivitas" }] },
+  // S/N
+  { id: 16, question: "Saya lebih percaya pada...", options: [{ value: "S", text: "Fakta dan pengalaman nyata" }, { value: "N", text: "Intuisi dan kemungkinan" }] },
+  { id: 17, question: "Saya lebih suka...", options: [{ value: "S", text: "Detail" }, { value: "N", text: "Gambaran besar" }] },
+  { id: 18, question: "Saya lebih suka...", options: [{ value: "S", text: "Langkah demi langkah" }, { value: "N", text: "Lompatan ide" }] },
+  { id: 19, question: "Saya lebih suka...", options: [{ value: "S", text: "Hal konkret" }, { value: "N", text: "Hal abstrak" }] },
+  { id: 20, question: "Saya lebih suka...", options: [{ value: "S", text: "Pengalaman nyata" }, { value: "N", text: "Imajinasi" }] },
+  { id: 21, question: "Saya lebih suka...", options: [{ value: "S", text: "Praktis" }, { value: "N", text: "Teoritis" }] },
+  { id: 22, question: "Saya lebih suka...", options: [{ value: "S", text: "Mengikuti instruksi" }, { value: "N", text: "Mencari cara sendiri" }] },
+  { id: 23, question: "Saya lebih suka...", options: [{ value: "S", text: "Hal yang sudah terbukti" }, { value: "N", text: "Hal baru dan berbeda" }] },
+  { id: 24, question: "Saya lebih suka...", options: [{ value: "S", text: "Realita" }, { value: "N", text: "Kemungkinan" }] },
+  { id: 25, question: "Saya lebih suka...", options: [{ value: "S", text: "Hal yang nyata" }, { value: "N", text: "Hal yang dibayangkan" }] },
+  { id: 26, question: "Saya lebih suka...", options: [{ value: "S", text: "Mengamati" }, { value: "N", text: "Membayangkan" }] },
+  { id: 27, question: "Saya lebih suka...", options: [{ value: "S", text: "Mengikuti pola" }, { value: "N", text: "Menciptakan pola baru" }] },
+  { id: 28, question: "Saya lebih suka...", options: [{ value: "S", text: "Hal yang sudah ada" }, { value: "N", text: "Hal yang mungkin terjadi" }] },
+  { id: 29, question: "Saya lebih suka...", options: [{ value: "S", text: "Fakta" }, { value: "N", text: "Ide" }] },
+  { id: 30, question: "Saya lebih suka...", options: [{ value: "S", text: "Hal yang jelas" }, { value: "N", text: "Hal yang ambigu" }] },
+  // T/F
+  { id: 31, question: "Saya lebih suka...", options: [{ value: "T", text: "Keputusan logis" }, { value: "F", text: "Keputusan berdasarkan perasaan" }] },
+  { id: 32, question: "Saya lebih suka...", options: [{ value: "T", text: "Keadilan" }, { value: "F", text: "Kebaikan hati" }] },
+  { id: 33, question: "Saya lebih suka...", options: [{ value: "T", text: "Objektivitas" }, { value: "F", text: "Empati" }] },
+  { id: 34, question: "Saya lebih suka...", options: [{ value: "T", text: "Analisis" }, { value: "F", text: "Perasaan" }] },
+  { id: 35, question: "Saya lebih suka...", options: [{ value: "T", text: "Kritik membangun" }, { value: "F", text: "Dukungan emosional" }] },
+  { id: 36, question: "Saya lebih suka...", options: [{ value: "T", text: "Menyelesaikan masalah" }, { value: "F", text: "Membantu orang lain" }] },
+  { id: 37, question: "Saya lebih suka...", options: [{ value: "T", text: "Konsistensi" }, { value: "F", text: "Kompromi" }] },
+  { id: 38, question: "Saya lebih suka...", options: [{ value: "T", text: "Menyampaikan kebenaran" }, { value: "F", text: "Menjaga perasaan orang lain" }] },
+  { id: 39, question: "Saya lebih suka...", options: [{ value: "T", text: "Membuat keputusan sendiri" }, { value: "F", text: "Berdiskusi dengan orang lain" }] },
+  { id: 40, question: "Saya lebih suka...", options: [{ value: "T", text: "Aturan" }, { value: "F", text: "Kebutuhan individu" }] },
+  { id: 41, question: "Saya lebih suka...", options: [{ value: "T", text: "Kebenaran" }, { value: "F", text: "Kedamaian" }] },
+  { id: 42, question: "Saya lebih suka...", options: [{ value: "T", text: "Debat" }, { value: "F", text: "Kompromi" }] },
+  { id: 43, question: "Saya lebih suka...", options: [{ value: "T", text: "Logika" }, { value: "F", text: "Perasaan" }] },
+  { id: 44, question: "Saya lebih suka...", options: [{ value: "T", text: "Kritik" }, { value: "F", text: "Pujian" }] },
+  { id: 45, question: "Saya lebih suka...", options: [{ value: "T", text: "Menyelesaikan tugas" }, { value: "F", text: "Membantu teman" }] },
+  // J/P
+  { id: 46, question: "Saya lebih suka...", options: [{ value: "J", text: "Rencana terstruktur" }, { value: "P", text: "Fleksibilitas" }] },
+  { id: 47, question: "Saya lebih suka...", options: [{ value: "J", text: "Jadwal tetap" }, { value: "P", text: "Jadwal fleksibel" }] },
+  { id: 48, question: "Saya lebih suka...", options: [{ value: "J", text: "Keputusan cepat" }, { value: "P", text: "Keputusan lambat" }] },
+  { id: 49, question: "Saya lebih suka...", options: [{ value: "J", text: "Tugas selesai lebih awal" }, { value: "P", text: "Tugas selesai mendekati deadline" }] },
+  { id: 50, question: "Saya lebih suka...", options: [{ value: "J", text: "Kepastian" }, { value: "P", text: "Kemungkinan" }] },
+  { id: 51, question: "Saya lebih suka...", options: [{ value: "J", text: "Perencanaan" }, { value: "P", text: "Improvisasi" }] },
+  { id: 52, question: "Saya lebih suka...", options: [{ value: "J", text: "Mengikuti aturan" }, { value: "P", text: "Menciptakan aturan sendiri" }] },
+  { id: 53, question: "Saya lebih suka...", options: [{ value: "J", text: "Tugas terorganisir" }, { value: "P", text: "Tugas spontan" }] },
+  { id: 54, question: "Saya lebih suka...", options: [{ value: "J", text: "Rencana matang" }, { value: "P", text: "Rencana fleksibel" }] },
+  { id: 55, question: "Saya lebih suka...", options: [{ value: "J", text: "Tujuan jelas" }, { value: "P", text: "Tujuan berubah-ubah" }] },
+  { id: 56, question: "Saya lebih suka...", options: [{ value: "J", text: "Tugas selesai satu per satu" }, { value: "P", text: "Tugas paralel" }] },
+  { id: 57, question: "Saya lebih suka...", options: [{ value: "J", text: "Mengikuti rencana" }, { value: "P", text: "Mengikuti alur" }] },
+  { id: 58, question: "Saya lebih suka...", options: [{ value: "J", text: "Keputusan pasti" }, { value: "P", text: "Keputusan terbuka" }] },
+  { id: 59, question: "Saya lebih suka...", options: [{ value: "J", text: "Lingkungan teratur" }, { value: "P", text: "Lingkungan dinamis" }] },
+  { id: 60, question: "Saya lebih suka...", options: [{ value: "J", text: "Rencana jangka panjang" }, { value: "P", text: "Rencana spontan" }] },
 ]
 
 export default function MBTITestPage() {
@@ -81,6 +84,8 @@ export default function MBTITestPage() {
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [isComplete, setIsComplete] = useState(false)
   const [mbtiResult, setMbtiResult] = useState("")
+  const { user } = useAuth()
+  const { toast } = useToast()
 
   const handleAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
@@ -100,21 +105,30 @@ export default function MBTITestPage() {
     }
   }
 
-  const calculateMBTI = () => {
+  const calculateMBTI = async () => {
     const scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 }
-
     Object.values(answers).forEach((answer) => {
       scores[answer as keyof typeof scores]++
     })
-
     const result =
       (scores.E > scores.I ? "E" : "I") +
       (scores.S > scores.N ? "S" : "N") +
       (scores.T > scores.F ? "T" : "F") +
       (scores.J > scores.P ? "J" : "P")
-
     setMbtiResult(result)
     setIsComplete(true)
+    // Update ke Supabase
+    if (user) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ mbti_type: result })
+        .eq("id", user.id)
+      if (!error) {
+        toast({ title: "Hasil MBTI disimpan ke profil!" })
+      } else {
+        toast({ title: "Gagal update MBTI ke profil", description: error.message, variant: "destructive" })
+      }
+    }
   }
 
   const getMBTIDescription = (type: string) => {
