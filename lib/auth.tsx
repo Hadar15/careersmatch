@@ -3,12 +3,21 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
-const AuthContext = createContext(null)
+type AuthContextType = {
+  user: any;
+  session: any;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, fullName: string) => Promise<any>;
+  signOut: () => Promise<void>;
+};
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<any>(null)
+  const [session, setSession] = useState<any>(null)
+  const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
     const getSession = async () => {
@@ -28,12 +37,12 @@ export function AuthProvider({ children }) {
   }, [])
 
   // Sign in with email/password
-  const signIn = async (email, password) => {
+  const signIn = async (email: string, password: string) => {
     return await supabase.auth.signInWithPassword({ email, password })
   }
 
   // Sign up with email/password
-  const signUp = async (email, password, fullName) => {
+  const signUp = async (email: string, password: string, fullName: string) => {
     return await supabase.auth.signUp({
       email,
       password,
@@ -63,7 +72,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider")
