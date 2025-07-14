@@ -25,10 +25,12 @@ import {
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth"
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   return (
     <div className="min-h-screen">
@@ -69,19 +71,29 @@ export default function HomePage() {
 
           {/* Desktop Buttons */}
           <div className="hidden lg:flex items-center space-x-3">
-            <Link href="/auth/login">
-              <Button
-                variant="outline"
-                className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
-              >
-                Masuk
-              </Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
-                Daftar Gratis
-              </Button>
-            </Link>
+            {user ? (
+              <Link href="/profile">
+                <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
+                  Profil saya
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/auth/login">
+                  <Button
+                    variant="outline"
+                    className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+                  >
+                    Masuk
+                  </Button>
+                </Link>
+                <Link href="/auth/register">
+                  <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
+                    Daftar Gratis
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -131,23 +143,36 @@ export default function HomePage() {
                   Cara Kerja
                 </Link>
                 <div className="flex items-center space-x-4 pt-4">
-                  <Link href="/auth/login" className="flex-1">
-                    <Button
-                      variant="outline"
-                      className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Masuk
-                    </Button>
-                  </Link>
-                  <Link href="/auth/register" className="flex-1">
-                    <Button 
-                      className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Daftar
-                    </Button>
-                  </Link>
+                  {user ? (
+                    <Link href="/profile" className="flex-1">
+                      <Button
+                        className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Profil saya
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href="/auth/login" className="flex-1">
+                        <Button
+                          variant="outline"
+                          className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Masuk
+                        </Button>
+                      </Link>
+                      <Link href="/auth/register" className="flex-1">
+                        <Button 
+                          className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Daftar
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </nav>
             </div>
@@ -193,7 +218,7 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 mb-12 sm:mb-16">
-            <Link href="/auth/register" className="w-full sm:w-auto">
+            <Link href={user ? "/dashboard" : "/auth/register"} className="w-full sm:w-auto">
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
