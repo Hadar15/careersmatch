@@ -56,7 +56,10 @@ export async function GET() {
           break
         }
       } catch (endpointError) {
-        console.log(`❌ Failed to fetch from ${endpoint}:`, endpointError)
+        console.error(`❌ Failed to fetch from ${endpoint}:`, endpointError)
+        if (endpointError instanceof Error) {
+          console.error('Endpoint error stack:', endpointError.stack)
+        }
         continue
       }
     }
@@ -89,7 +92,10 @@ export async function GET() {
           console.log(`✅ Successfully fetched ${courses.length} courses from Class Central API`)
         }
       } catch (apiError) {
-        console.log("❌ Class Central API also failed:", apiError)
+        console.error("❌ Class Central API also failed:", apiError)
+        if (apiError instanceof Error) {
+          console.error('API error stack:', apiError.stack)
+        }
       }
     }
 
@@ -168,6 +174,9 @@ export async function GET() {
     })
   } catch (error) {
     console.error("❌ Error fetching courses:", error)
+    if (error instanceof Error) {
+      console.error('General error stack:', error.stack)
+    }
     
     // Enhanced fallback mock data
     const mockCourses: Course[] = [
