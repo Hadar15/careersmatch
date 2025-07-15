@@ -2,21 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import mammoth from 'mammoth';
 import OpenAI from 'openai';
-// @ts-ignore
-const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
-
-// Helper to extract text from PDF using pdfjs-dist
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  const loadingTask = pdfjsLib.getDocument({ data: buffer });
-  const pdf = await loadingTask.promise;
-  let text = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map((item: any) => item.str).join(' ') + '\n';
-  }
-  return text;
-}
 
 // Initialize Supabase client with service role key (server-side only)
 const supabase = createClient(
@@ -64,7 +49,8 @@ export async function POST(request: NextRequest) {
     let extractedText = '';
     if (fileExt === 'pdf') {
       try {
-        extractedText = await extractTextFromPDF(Buffer.from(arrayBuffer));
+        const pdfParse = (await import('pdf-parse')).default;
+        extractedText = (await pdfParse(Buffer.from(arrayBuffer))).text;
       } catch (err: any) {
         return NextResponse.json({ error: 'Failed to parse PDF file', details: err.message }, { status: 500 });
       }
