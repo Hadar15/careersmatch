@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import mammoth from 'mammoth';
-import OpenAI from 'openai';
 
 // Initialize Supabase client with service role key (server-side only)
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-// Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,35 +62,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to extract text from CV.' }, { status: 500 });
     }
 
-    // 5. Call OpenAI to extract required info
-    const prompt = `Extract the following information from this CV:
-- Education
-- Organizational experience (within education)
-- Work experience
-- Soft skills
-- Hard skills
-
-Return the result as a JSON object with keys: education, organizational_experience, work_experience, soft_skills, hard_skills.
-
-CV Content:
-"""
-${extractedText}
-"""`;
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: 'You are an expert CV parser for ATS systems.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.2,
-      max_tokens: 1000,
+    // 5. Call DeepSeek to extract required info
+    const prompt = `Extract the following information from this CV:\n- Education\n- Organizational experience (within education)\n- Work experience\n- Soft skills\n- Hard skills\n\nReturn the result as a JSON object with keys: education, organizational_experience, work_experience, soft_skills, hard_skills.\n\nCV Content:\n"""\n${extractedText}\n"""`;
+    const deepseekResponse = await fetch('https://api.deepinfra.com/v1/openai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-ai/DeepSeek-V3-0324',
+        messages: [
+          { role: 'system', content: 'You are an expert CV parser for ATS systems.' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.2,
+        max_tokens: 1000,
+      }),
     });
-    const aiResponse = completion.choices[0]?.message?.content;
+    if (!deepseekResponse.ok) {
+      const errorText = await deepseekResponse.text();
+      return NextResponse.json({ error: 'DeepSeek API error', details: errorText }, { status: 500 });
+    }
+    const deepseekData = await deepseekResponse.json();
+    const aiResponse = deepseekData.choices?.[0]?.message?.content;
     let extractedJson;
     try {
       extractedJson = JSON.parse(aiResponse || '{}');
     } catch (e) {
-      return NextResponse.json({ error: 'Failed to parse OpenAI response as JSON.', aiResponse }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to parse DeepSeek response as JSON.', aiResponse }, { status: 500 });
     }
 
     // 6. Save the JSON result to Supabase Storage
