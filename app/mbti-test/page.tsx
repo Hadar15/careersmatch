@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -87,8 +87,23 @@ export default function MBTITestPage() {
   const { user } = useAuth()
   const { toast } = useToast()
 
+  useEffect(() => {
+    const savedAnswers = localStorage.getItem("mbti_answers")
+    if (savedAnswers) {
+      setAnswers(JSON.parse(savedAnswers))
+      // Jika sudah lengkap, redirect ke hasil
+      if (Object.keys(JSON.parse(savedAnswers)).length === mbtiQuestions.length) {
+        window.location.href = "/mbti-test/result"
+      }
+    }
+  }, [])
+
   const handleAnswer = (questionId: number, value: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }))
+    setAnswers((prev) => {
+      const updated = { ...prev, [questionId]: value }
+      localStorage.setItem("mbti_answers", JSON.stringify(updated))
+      return updated
+    })
   }
 
   const nextQuestion = () => {
@@ -117,6 +132,8 @@ export default function MBTITestPage() {
       (scores.J > scores.P ? "J" : "P")
     setMbtiResult(result)
     setIsComplete(true)
+    // Simpan ke localStorage
+    localStorage.setItem("mbti_result", result)
     // Update ke Supabase
     if (user) {
       const { error } = await supabase
@@ -129,37 +146,136 @@ export default function MBTITestPage() {
         toast({ title: "Gagal update MBTI ke profil", description: error.message, variant: "destructive" })
       }
     }
+    // Redirect ke halaman hasil
+    window.location.href = "/mbti-test/result"
   }
 
   const getMBTIDescription = (type: string) => {
-    const descriptions: Record<string, { name: string; traits: string[]; careers: string[] }> = {
+    const descriptions: Record<string, {
+      name: string;
+      description: string;
+      traits: string[];
+      careers: string[];
+    }> = {
+      ISTJ: {
+        name: "The Inspector",
+        description:
+          "ISTJ adalah pribadi yang bertanggung jawab, teliti, dan sangat menghargai tradisi. Mereka suka keteraturan, dapat diandalkan, dan selalu berusaha menyelesaikan tugas dengan baik. ISTJ cenderung logis, realistis, dan lebih suka bekerja di balik layar daripada menjadi pusat perhatian.",
+        traits: ["Teliti", "Bertanggung jawab", "Konsisten", "Realistis"],
+        careers: ["Akuntan", "Auditor", "Administrator", "Insinyur"],
+      },
+      ISFJ: {
+        name: "The Protector",
+        description:
+          "ISFJ dikenal sebagai sosok yang peduli, setia, dan suka membantu orang lain. Mereka sangat memperhatikan kebutuhan orang di sekitarnya, suka menjaga harmoni, dan rela berkorban demi orang yang mereka sayangi. ISFJ juga sangat teliti dan suka bekerja dengan detail.",
+        traits: ["Peduli", "Setia", "Teliti", "Ramah"],
+        careers: ["Perawat", "Guru", "Administrasi", "Pekerja Sosial"],
+      },
+      INFJ: {
+        name: "The Advocate",
+        description:
+          "INFJ adalah tipe yang idealis, penuh empati, dan memiliki visi jangka panjang. Mereka suka membantu orang lain menemukan potensi terbaiknya, sangat intuitif, dan seringkali punya nilai hidup yang kuat. INFJ cenderung pendiam namun sangat peduli pada sesama.",
+        traits: ["Empati", "Visioner", "Pendengar baik", "Inspiratif"],
+        careers: ["Psikolog", "Konselor", "Penulis", "Guru"],
+      },
       INTJ: {
         name: "The Architect",
-        traits: ["Strategis", "Inovatif", "Independen", "Visioner"],
-        careers: ["Software Architect", "Data Scientist", "Research Analyst", "Strategic Planner"],
+        description:
+          "INTJ adalah pemikir strategis yang mandiri, logis, dan visioner. Mereka suka merancang rencana jangka panjang, sangat analitis, dan selalu mencari cara paling efisien untuk mencapai tujuan. INTJ cenderung perfeksionis dan suka tantangan intelektual.",
+        traits: ["Strategis", "Mandiri", "Analitis", "Visioner"],
+        careers: ["Ilmuwan Data", "Software Architect", "Peneliti", "Perencana Strategis"],
+      },
+      ISTP: {
+        name: "The Virtuoso",
+        description:
+          "ISTP adalah problem solver yang praktis, suka tantangan, dan sangat fleksibel. Mereka senang memahami cara kerja sesuatu, suka bereksperimen, dan mampu bertindak cepat dalam situasi darurat. ISTP cenderung tenang, logis, dan suka kebebasan.",
+        traits: ["Praktis", "Fleksibel", "Logis", "Mandiri"],
+        careers: ["Teknisi", "Insinyur", "Pilot", "Ahli Otomotif"],
+      },
+      ISFP: {
+        name: "The Composer",
+        description:
+          "ISFP adalah pribadi yang artistik, sensitif, dan suka kedamaian. Mereka menghargai keindahan, suka mengekspresikan diri melalui karya seni, dan cenderung menghindari konflik. ISFP lebih suka bekerja di balik layar dan menikmati momen-momen kecil dalam hidup.",
+        traits: ["Artistik", "Sensitif", "Ramah", "Damai"],
+        careers: ["Desainer", "Seniman", "Fotografer", "Perawat"],
+      },
+      INFP: {
+        name: "The Mediator",
+        description:
+          "INFP adalah tipe yang idealis, penuh imajinasi, dan sangat peduli pada nilai-nilai pribadi. Mereka suka membantu orang lain, kreatif, dan seringkali menjadi inspirasi bagi sekitarnya. INFP cenderung pendiam, namun sangat setia pada prinsip hidupnya.",
+        traits: ["Idealis", "Kreatif", "Empati", "Setia"],
+        careers: ["Penulis", "Psikolog", "Seniman", "Guru"],
       },
       INTP: {
         name: "The Thinker",
-        traits: ["Analitis", "Kreatif", "Fleksibel", "Objektif"],
-        careers: ["Software Developer", "Research Scientist", "Systems Analyst", "Technical Writer"],
+        description:
+          "INTP adalah pemikir logis, analitis, dan sangat suka mengeksplorasi ide-ide baru. Mereka senang memecahkan masalah kompleks, suka diskusi intelektual, dan cenderung independen. INTP seringkali kreatif dan inovatif dalam menemukan solusi.",
+        traits: ["Logis", "Analitis", "Kreatif", "Mandiri"],
+        careers: ["Programmer", "Peneliti", "Analis Sistem", "Penulis Teknis"],
       },
-      ENTJ: {
-        name: "The Commander",
-        traits: ["Leadership", "Strategis", "Efisien", "Ambisius"],
-        careers: ["CEO", "Project Manager", "Business Analyst", "Management Consultant"],
+      ESTP: {
+        name: "The Dynamo",
+        description:
+          "ESTP adalah pribadi yang energik, spontan, dan suka tantangan. Mereka suka bertindak cepat, senang berinteraksi dengan banyak orang, dan sangat adaptif. ESTP cenderung berani mengambil risiko dan suka pengalaman baru.",
+        traits: ["Energik", "Spontan", "Adaptif", "Berani"],
+        careers: ["Sales", "Entrepreneur", "Atlet", "Polisi"],
+      },
+      ESFP: {
+        name: "The Entertainer",
+        description:
+          "ESFP adalah sosok yang ramah, suka bersenang-senang, dan sangat menikmati hidup. Mereka suka menjadi pusat perhatian, mudah bergaul, dan selalu membawa energi positif ke sekitarnya. ESFP juga sangat peduli pada orang lain dan suka membantu.",
+        traits: ["Ramah", "Optimis", "Sosial", "Peduli"],
+        careers: ["Aktor", "MC", "Guru TK", "Pekerja Sosial"],
+      },
+      ENFP: {
+        name: "The Campaigner",
+        description:
+          "ENFP adalah pribadi yang antusias, kreatif, dan sangat imajinatif. Mereka suka mengeksplorasi ide-ide baru, mudah beradaptasi, dan sangat peduli pada orang lain. ENFP cenderung spontan, suka tantangan, dan selalu mencari makna dalam hidup.",
+        traits: ["Antusias", "Kreatif", "Empati", "Fleksibel"],
+        careers: ["Jurnalis", "Konselor", "Public Relations", "Penulis"],
       },
       ENTP: {
         name: "The Debater",
-        traits: ["Inovatif", "Energik", "Kreatif", "Adaptif"],
-        careers: ["Product Manager", "Marketing Manager", "Entrepreneur", "Business Development"],
+        description:
+          "ENTP adalah pemikir inovatif, suka berdebat, dan sangat suka tantangan intelektual. Mereka cepat belajar, suka diskusi, dan selalu mencari cara baru untuk memecahkan masalah. ENTP cenderung fleksibel dan suka perubahan.",
+        traits: ["Inovatif", "Kritis", "Fleksibel", "Percaya Diri"],
+        careers: ["Pengacara", "Entrepreneur", "Konsultan Bisnis", "Marketing"],
+      },
+      ESTJ: {
+        name: "The Supervisor",
+        description:
+          "ESTJ adalah pribadi yang tegas, terorganisir, dan suka keteraturan. Mereka suka memimpin, sangat logis, dan selalu berusaha mencapai target. ESTJ cenderung praktis, suka aturan, dan dapat diandalkan dalam situasi apapun.",
+        traits: ["Tegas", "Terorganisir", "Praktis", "Logis"],
+        careers: ["Manajer", "Administrator", "Polisi", "Tentara"],
+      },
+      ESFJ: {
+        name: "The Consul",
+        description:
+          "ESFJ adalah sosok yang hangat, suka membantu, dan sangat peduli pada orang lain. Mereka suka menjaga harmoni, mudah bergaul, dan sangat bertanggung jawab. ESFJ cenderung suka bekerja sama dan selalu berusaha membuat lingkungan nyaman.",
+        traits: ["Hangat", "Peduli", "Bertanggung Jawab", "Sosial"],
+        careers: ["Guru", "Perawat", "Event Organizer", "HRD"],
+      },
+      ENFJ: {
+        name: "The Protagonist",
+        description:
+          "ENFJ adalah pemimpin yang inspiratif, penuh empati, dan sangat peduli pada perkembangan orang lain. Mereka suka memotivasi, mudah memahami perasaan orang lain, dan sangat komunikatif. ENFJ cenderung suka bekerja dalam tim dan menjadi penggerak perubahan.",
+        traits: ["Inspiratif", "Empati", "Komunikatif", "Motivator"],
+        careers: ["Guru", "Psikolog", "Public Speaker", "Manajer SDM"],
+      },
+      ENTJ: {
+        name: "The Commander",
+        description:
+          "ENTJ adalah pemimpin alami yang tegas, visioner, dan sangat logis. Mereka suka merancang strategi, cepat mengambil keputusan, dan selalu fokus pada tujuan. ENTJ cenderung percaya diri, suka tantangan, dan sangat kompetitif.",
+        traits: ["Tegas", "Visioner", "Logis", "Kompetitif"],
+        careers: ["CEO", "Manajer Proyek", "Konsultan Bisnis", "Pengacara"],
       },
     }
-
     return (
       descriptions[type] || {
-        name: "Personality Type",
+        name: "Tipe Kepribadian",
+        description: "Deskripsi belum tersedia.",
         traits: ["Unik", "Berbakat", "Potensial", "Berkembang"],
-        careers: ["Various Career Options", "Leadership Roles", "Creative Positions", "Technical Roles"],
+        careers: ["Beragam Karir", "Peran Kepemimpinan", "Posisi Kreatif", "Teknis"],
       }
     )
   }
@@ -255,72 +371,7 @@ export default function MBTITestPage() {
               </CardContent>
             </Card>
           </>
-        ) : (
-          /* Results */
-          <Card className="max-w-2xl mx-auto border-sky-100 shadow-xl">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-                Hasil Tes MBTI Anda
-              </CardTitle>
-              <CardDescription>Tipe kepribadian Anda telah diidentifikasi</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-center">
-                <div className="w-24 h-24 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl font-bold text-white">{mbtiResult}</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">{getMBTIDescription(mbtiResult).name}</h3>
-              </div>
-
-              <div className="bg-gradient-to-r from-sky-50 to-emerald-50 rounded-lg p-6 space-y-4">
-                <div>
-                  <h4 className="font-semibold text-sky-700 mb-2">Karakteristik Utama:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {getMBTIDescription(mbtiResult).traits.map((trait, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-white rounded-full text-sm text-sky-600 border border-sky-200"
-                      >
-                        {trait}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-emerald-700 mb-2">Karir yang Cocok:</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {getMBTIDescription(mbtiResult).careers.map((career, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-2 bg-white rounded-lg text-sm text-emerald-600 border border-emerald-200"
-                      >
-                        {career}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Link href="/dashboard">
-                  <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                    Lihat Rekomendasi Pekerjaan
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-                </Link>
-                <Link href="/job-matching">
-                  <Button
-                    variant="outline"
-                    className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
-                  >
-                    Mulai Job Matching
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        ) : null}
       </div>
     </div>
   )

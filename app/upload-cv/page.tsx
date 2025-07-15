@@ -15,9 +15,11 @@ import { Progress } from "@/components/ui/progress"
 import { Upload, FileText, Brain, CheckCircle, ArrowRight, ArrowLeft, Briefcase, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
-import * as pdfjsLib from "pdfjs-dist/build/pdf"
-import "pdfjs-dist/build/pdf.worker.entry"
+import * as pdfjsLib from "pdfjs-dist"
 import { useRouter } from "next/navigation"
+
+// Atur workerSrc pdfjs secara global (modern way)
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
 
 export default function UploadCVPage() {
   const { user }: { user: SupabaseUser | null } = useAuth()

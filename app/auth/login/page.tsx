@@ -59,12 +59,12 @@ export default function LoginPage() {
             variant: "destructive",
           })
         } else {
-          setError(error.message)
-          toast({
-            title: "Login Gagal",
-            description: error.message,
-            variant: "destructive",
-          })
+        setError(error.message)
+        toast({
+          title: "Login Gagal",
+          description: error.message,
+          variant: "destructive",
+        })
         }
       } else {
         toast({

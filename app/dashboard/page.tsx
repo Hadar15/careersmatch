@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Brain, MapPin, DollarSign, User, BookOpen, Clock, ArrowRight, Star, Upload, LogOut, Briefcase, PanelLeft } from "lucide-react"
+import { Brain, MapPin, DollarSign, User, BookOpen, Clock, ArrowRight, Star, Upload, LogOut, Briefcase, PanelLeft, CheckCircle, AlertCircle, FileText, BadgeCheck } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { supabase } from "@/lib/supabase"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 
 export default function DashboardPage() {
   const { user, signOut }: { user: SupabaseUser | null, signOut: () => Promise<void> } = useAuth()
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [cvUploaded, setCvUploaded] = useState<boolean | null>(null)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -56,6 +58,20 @@ export default function DashboardPage() {
       }
     }
     fetchProfile()
+  }, [user])
+
+  useEffect(() => {
+    const fetchCVStatus = async () => {
+      if (!user) return
+      const { data, error } = await supabase
+        .from("cv_uploads")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle()
+      setCvUploaded(!!data)
+    }
+    fetchCVStatus()
   }, [user])
 
   const handleSignOut = async () => {
@@ -124,114 +140,6 @@ export default function DashboardPage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-        {/* Header */}
-        <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <button onClick={() => setSidebarOpen(true)} className="mr-2 p-2 rounded hover:bg-sky-100">
-                <PanelLeft className="w-6 h-6 text-sky-600" />
-              </button>
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                  <Brain className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-                  CareerMatch AI
-                </span>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              {/* Username & Avatar, bisa diklik ke /profile */}
-              <button onClick={() => router.push("/profile")}
-                className="flex items-center space-x-2 focus:outline-none">
-                <Avatar>
-                  <AvatarFallback>
-                    {(profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "U").charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="font-medium text-gray-700">
-                  {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
-                </span>
-              </button>
-              <nav className="hidden md:flex items-center space-x-4">
-                {/* Hapus tombol Upload CV dan Tes MBTI */}
-                <Button
-                  variant="outline"
-                  className="border-blue-200 text-blue-600 hover:bg-blue-50 bg-transparent"
-                  onClick={handleJobMatching}
-                >
-                  <Briefcase className="mr-2 w-4 h-4" />
-                  Job Matching
-                </Button>
-                <Link href="/skill-upgrade">
-                  <Button
-                    variant="outline"
-                    className="border-purple-200 text-purple-600 hover:bg-purple-50 bg-transparent"
-                  >
-                    <BookOpen className="mr-2 w-4 h-4" />
-                    Skill Upgrade
-                  </Button>
-                </Link>
-                <Button
-                  onClick={handleSignOut}
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
-                >
-                  <LogOut className="mr-2 w-4 h-4" />
-                  Logout
-                </Button>
-              </nav>
-              {/* Mobile logout */}
-              <div className="md:hidden">
-                <Button
-                  onClick={handleSignOut}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          {/* Sidebar Drawer */}
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetContent side="left" className="w-72 p-0">
-              <SheetTitle className="sr-only">Navigasi</SheetTitle>
-              <div className="p-6 pb-2">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Avatar>
-                    <AvatarFallback>
-                      {(profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "U").charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-semibold text-lg text-gray-800">
-                      {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
-                    </div>
-                    <div className="text-gray-500 text-sm">{user?.email}</div>
-                  </div>
-                </div>
-                <Separator className="my-4" />
-                <nav className="flex flex-col gap-2">
-                  <Button variant="ghost" className="justify-start" onClick={() => {router.push("/profile"); setSidebarOpen(false)}}>
-                    Profile
-                  </Button>
-                  <Button variant="ghost" className="justify-start" onClick={() => {handleJobMatching(); setSidebarOpen(false)}}>
-                    Job Matching
-                  </Button>
-                  <Button variant="ghost" className="justify-start" onClick={() => {router.push("/skill-upgrade"); setSidebarOpen(false)}}>
-                    Course
-                  </Button>
-                  <Button variant="ghost" className="justify-start" onClick={() => {router.push("/roadmap"); setSidebarOpen(false)}}>
-                    Roadmap
-                  </Button>
-                </nav>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </header>
-
         <div className="container mx-auto px-4 py-6 md:py-8">
           {/* Welcome Section */}
           <div className="mb-6 md:mb-8">
@@ -283,32 +191,87 @@ export default function DashboardPage() {
           {/* Data Overview */}
           <Card className="mb-6 md:mb-8 border-sky-100 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="w-5 h-5 text-sky-600" />
+              <CardTitle className="flex items-center space-x-2 text-2xl md:text-3xl">
+                <User className="w-6 h-6 text-sky-600" />
                 <span>Data Overview</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div>
-                  <strong>Hasil Tes MBTI:</strong> {profile?.mbti_type ? profile.mbti_type : <span className="text-red-500">Belum melakukan tes MBTI</span>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 text-base md:text-lg">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-6 h-6 text-purple-500" />
+                    <span className="font-semibold">Hasil Tes MBTI:</span>
+                    {profile?.mbti_type ? (
+                      <span className="ml-2 px-2 py-1 rounded bg-green-50 text-green-700 border border-green-200 text-sm font-medium">{profile.mbti_type}</span>
+                    ) : (
+                      <span className="ml-2 flex items-center gap-1 text-red-600 font-medium"><AlertCircle className="w-4 h-4" /> Belum melakukan tes MBTI</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <BadgeCheck className="w-6 h-6 text-blue-500" />
+                    <span className="font-semibold">Status Upload CV:</span>
+                    {cvUploaded === null ? (
+                      <span className="ml-2 text-gray-500">Memuat status...</span>
+                    ) : cvUploaded ? (
+                      <span className="ml-2 flex items-center gap-1 text-green-700 font-medium"><CheckCircle className="w-4 h-4" /> Sudah upload CV</span>
+                    ) : (
+                      <span className="ml-2 flex items-center gap-1 text-red-600 font-medium"><AlertCircle className="w-4 h-4" /> Belum upload CV</span>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <strong>Status Upload CV:</strong> {isCVUploaded ? <span className="text-green-600">Sudah upload CV</span> : <span className="text-red-500">Belum upload CV</span>}
-                </div>
-                <div>
-                  <strong>Pengalaman Kerja:</strong> {(() => { const cv = getCVAnalysis(); return cv && cv.experience && cv.experience.totalYears ? `${cv.experience.totalYears} tahun` : "-" })()}
-                </div>
-                <div>
-                  <strong>Skill yang Dikuasai:</strong> {(() => { const cv = getCVAnalysis(); return cv && cv.skills && cv.skills.length ? cv.skills.join(", ") : "-" })()}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-6 h-6 text-emerald-500" />
+                    <span className="font-semibold">Pengalaman Kerja:</span>
+                    <span className="ml-2">
+                      {cvUploaded === null ? (
+                        <span className='text-gray-400'>Memuat data...</span>
+                      ) : cvUploaded ? (
+                        (() => {
+                          const cv = getCVAnalysis();
+                          return cv && cv.experience && cv.experience.totalYears
+                            ? `${cv.experience.totalYears} tahun`
+                            : <span className='text-gray-400'>Belum ada data</span>;
+                        })()
+                      ) : (
+                        <span className='text-gray-400'>Belum ada data (CV belum diupload)</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Star className="w-6 h-6 text-yellow-500" />
+                    <span className="font-semibold">Skill yang Dikuasai:</span>
+                    <span className="ml-2">
+                      {cvUploaded === null ? (
+                        <span className='text-gray-400'>Memuat data...</span>
+                      ) : cvUploaded ? (
+                        (() => {
+                          const cv = getCVAnalysis();
+                          return cv && cv.skills && cv.skills.length
+                            ? cv.skills.join(", ")
+                            : <span className='text-gray-400'>Belum ada data</span>;
+                        })()
+                      ) : (
+                        <span className='text-gray-400'>Belum ada data (CV belum diupload)</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Main Content Tabs */}
-          <Tabs defaultValue="jobs" className="space-y-6">
+          <Tabs defaultValue="ai-analysis" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-white border border-sky-100">
+              <TabsTrigger
+                value="ai-analysis"
+                className="text-xs md:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
+                onClick={() => router.push("/ai-analysis")}
+              >
+                AI Analysis
+              </TabsTrigger>
               <TabsTrigger
                 value="jobs"
                 className="text-xs md:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
@@ -320,12 +283,6 @@ export default function DashboardPage() {
                 className="text-xs md:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
               >
                 Courses
-              </TabsTrigger>
-              <TabsTrigger
-                value="skills"
-                className="text-xs md:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
-              >
-                Skill Analysis
               </TabsTrigger>
               <TabsTrigger
                 value="roadmap"

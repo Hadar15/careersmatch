@@ -78,12 +78,12 @@ export default function RegisterPage() {
           setLoading(false)
           return
         } else {
-          setError(error.message)
-          toast({
-            title: "Registrasi Gagal",
-            description: error.message,
-            variant: "destructive",
-          })
+        setError(error.message)
+        toast({
+          title: "Registrasi Gagal",
+          description: error.message,
+          variant: "destructive",
+        })
           setLoading(false)
           return
         }
@@ -110,11 +110,11 @@ export default function RegisterPage() {
           })
           router.push("/auth/verify-email")
         } else {
-          toast({
-            title: "Registrasi Berhasil",
-            description: "Akun Anda telah dibuat. Selamat datang!",
-          })
-          router.push("/dashboard")
+        toast({
+          title: "Registrasi Berhasil",
+          description: "Akun Anda telah dibuat. Selamat datang!",
+        })
+        router.push("/dashboard")
         }
       }
     } catch (err) {

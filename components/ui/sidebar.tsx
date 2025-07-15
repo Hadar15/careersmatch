@@ -4,6 +4,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -176,6 +177,7 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const router = useRouter()
 
     if (collapsible === "none") {
       return (
@@ -206,7 +208,19 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <div className="flex h-full w-full flex-col">
+              <nav className="flex flex-col gap-2">
+                <Button variant="ghost" className="justify-start" onClick={() => {router.push("/profile"); setOpenMobile(false)}}>
+                  Profile
+                </Button>
+                <Button variant="ghost" className="justify-start" onClick={() => {router.push("/ai-analysis"); setOpenMobile(false)}}>
+                  AI Analysis
+                </Button>
+                <Button variant="ghost" className="justify-start" onClick={() => {router.push("/job-matching"); setOpenMobile(false)}}>
+                  Job Matching
+                </Button>
+              </nav>
+            </div>
           </SheetContent>
         </Sheet>
       )
