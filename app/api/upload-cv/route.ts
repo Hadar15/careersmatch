@@ -62,35 +62,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to extract text from CV.' }, { status: 500 });
     }
 
-    // 5. Call DeepSeek to extract required info
+    // 5. Call Ollama LLM to extract required info
     const prompt = `Extract the following information from this CV:\n- Education\n- Organizational experience (within education)\n- Work experience\n- Soft skills\n- Hard skills\n\nReturn the result as a JSON object with keys: education, organizational_experience, work_experience, soft_skills, hard_skills.\n\nCV Content:\n"""\n${extractedText}\n"""`;
-    const deepseekResponse = await fetch('https://api.deepinfra.com/v1/openai/chat/completions', {
+    const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'deepseek-ai/DeepSeek-V3-0324',
-        messages: [
-          { role: 'system', content: 'You are an expert CV parser for ATS systems.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.2,
-        max_tokens: 1000,
+        model: 'llama2',
+        prompt,
+        stream: false,
       }),
     });
-    if (!deepseekResponse.ok) {
-      const errorText = await deepseekResponse.text();
-      return NextResponse.json({ error: 'DeepSeek API error', details: errorText }, { status: 500 });
+    if (!ollamaResponse.ok) {
+      const errorText = await ollamaResponse.text();
+      return NextResponse.json({ error: 'Ollama API error', details: errorText }, { status: 500 });
     }
-    const deepseekData = await deepseekResponse.json();
-    const aiResponse = deepseekData.choices?.[0]?.message?.content;
+    const ollamaData = await ollamaResponse.json();
+    const aiResponse = ollamaData.response;
     let extractedJson;
     try {
       extractedJson = JSON.parse(aiResponse || '{}');
     } catch (e) {
-      return NextResponse.json({ error: 'Failed to parse DeepSeek response as JSON.', aiResponse }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to parse Ollama response as JSON.', aiResponse }, { status: 500 });
     }
 
     // 6. Save the JSON result to Supabase Storage
