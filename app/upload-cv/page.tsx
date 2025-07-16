@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/mock-auth"
+import { useAuth } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,17 @@ import { Progress } from "@/components/ui/progress"
 import { Upload, FileText, Brain, CheckCircle, ArrowRight, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import { useRef } from "react";
+// Add this for TypeScript if maplibre-gl types are missing
+// @ts-ignore
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+// Add Photon geocoding API for place search
+// Remove PHOTON_API and add NOMINATIM_API
+const NOMINATIM_API = "https://nominatim.openstreetmap.org/search?format=json&q=";
+
+const MAP_STYLE_URL = "https://tiles.stadiamaps.com/styles/osm_bright.json";
 
 export default function UploadCVPage() {
   const { user } = useAuth()
@@ -24,48 +35,220 @@ export default function UploadCVPage() {
     name: "",
     email: user?.email || "",
     phone: "",
-    location: "",
+    location: null as null | { address: string; lat: number; lng: number },
     summary: "",
     experience_years: "",
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisComplete, setAnalysisComplete] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<any>(null)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState("");
+  // Add state for upload progress
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      // Validate file type
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ]
-      if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: "File tidak didukung",
-          description: "Silakan upload file PDF, DOC, atau DOCX",
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File terlalu besar",
-          description: "Ukuran file maksimal 10MB",
-          variant: "destructive",
-        })
-        return
-      }
-
-      setCvFile(file)
+  // Initialize MapLibre map
+  useEffect(() => {
+    if (step === 1 && mapContainer.current && !mapRef.current) {
+      setTimeout(() => {
+        if (mapContainer.current && !mapRef.current) {
+          const rect = mapContainer.current.getBoundingClientRect();
+          console.log(`[MapLibre] Map container dimensions: width=${rect.width}, height=${rect.height}`);
+          try {
+            console.log("[MapLibre] Initializing map...");
+            mapRef.current = new maplibregl.Map({
+              container: mapContainer.current,
+              style: MAP_STYLE_URL, // Use Stadia Maps OSM Bright style
+              center: [106.816666, -6.200000], // Jakarta
+              zoom: 5,
+            });
+            mapRef.current.on("load", () => {
+              setMapReady(true);
+              console.log("[MapLibre] Map loaded successfully.");
+            });
+            mapRef.current.on("error", (e: any) => {
+              setMapError("Gagal memuat peta. Coba refresh halaman atau periksa koneksi internet Anda.");
+              console.error("MapLibre GL JS error:", e);
+            });
+            mapRef.current.on("click", (e: any) => {
+              const lng = e.lngLat.lng;
+              const lat = e.lngLat.lat;
+              if (markerRef.current) markerRef.current.remove();
+              markerRef.current = new maplibregl.Marker().setLngLat([lng, lat]).addTo(mapRef.current);
+              setPersonalInfo((info) => ({
+                ...info,
+                location: {
+                  address: `Lat: ${lat}, Lng: ${lng}`,
+                  lat,
+                  lng,
+                },
+              }));
+            });
+          } catch (err) {
+            setMapError("Gagal memuat peta. Coba refresh halaman atau periksa koneksi internet Anda.");
+            console.error("Map initialization error:", err);
+          }
+        }
+      }, 0);
     }
-  }
+    // Cleanup on unmount
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        console.log("[MapLibre] Map destroyed on cleanup.");
+      }
+    };
+  }, [step, mapContainer.current]);
+
+  // Handle place search with Photon
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!search) return;
+    const res = await fetch(NOMINATIM_API + encodeURIComponent(search));
+    const data = await res.json();
+    setSearchResults(data || []);
+  };
+
+  // Handle selecting a search result
+  const handleSelectResult = (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    if (mapRef.current) {
+      mapRef.current.flyTo({ center: [lng, lat], zoom: 14 });
+      if (markerRef.current) markerRef.current.remove();
+      markerRef.current = new maplibregl.Marker().setLngLat([lng, lat]).addTo(mapRef.current);
+    }
+    setPersonalInfo((info) => ({
+      ...info,
+      location: {
+        address: result.display_name || search,
+        lat,
+        lng,
+      },
+    }));
+    setSearchResults([]);
+    setSearch("");
+  };
+
+  // Handle form changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setPersonalInfo((info) => ({ ...info, [name]: value }));
+  };
+
+  // Handle file upload
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setCvFile(e.target.files[0]);
+    }
+  };
+
+  // Handle submit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    if (!user) {
+      setError("Anda harus login untuk mengupload CV.");
+      return;
+    }
+    if (!cvFile) {
+      setError("Silakan upload file CV.");
+      return;
+    }
+    if (!personalInfo.location) {
+      setError("Silakan pilih lokasi di peta.");
+      return;
+    }
+    setIsAnalyzing(true);
+    setUploadProgress(0);
+    try {
+      // Use XMLHttpRequest for progress
+      const formData = new FormData();
+      formData.append('file', cvFile);
+      formData.append('userId', user.id);
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload-cv');
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setUploadProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error(xhr.responseText || 'Terjadi kesalahan saat upload.'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Terjadi kesalahan saat upload.'));
+        xhr.send(formData);
+      });
+      // Update or insert profile (as before)
+      const { error: upsertError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          email: personalInfo.email,
+          full_name: personalInfo.name,
+          phone: personalInfo.phone,
+          location: JSON.stringify(personalInfo.location),
+          professional_summary: personalInfo.summary,
+          experience_years: parseInt(personalInfo.experience_years, 10),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+      if (upsertError) throw upsertError;
+      setSuccess("CV dan profil berhasil diupload dan dianalisis!");
+      setAnalysisComplete(true);
+      setUploadProgress(100);
+      setStep(3);
+    } catch (err: any) {
+      setError(err.message || "Terjadi kesalahan saat upload.");
+    } finally {
+      setIsAnalyzing(false);
+      setTimeout(() => setUploadProgress(0), 1500); // Reset progress after short delay
+    }
+  };
 
   const handlePersonalInfoSubmit = async () => {
     try {
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "Anda harus login untuk menyimpan data.",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Upsert profile to Supabase as soon as personal info is submitted
+      const { error: upsertError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          email: personalInfo.email,
+          full_name: personalInfo.name,
+          phone: personalInfo.phone,
+          location: JSON.stringify(personalInfo.location),
+          professional_summary: personalInfo.summary,
+          experience_years: parseInt(personalInfo.experience_years, 10),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+      if (upsertError) {
+        toast({
+          title: "Error",
+          description: "Gagal menyimpan data ke server.",
+          variant: "destructive",
+        });
+        return;
+      }
       // Save to localStorage for demo
       const profile = {
         full_name: personalInfo.name,
@@ -76,9 +259,7 @@ export default function UploadCVPage() {
         profile_completion: 40,
         updated_at: new Date().toISOString(),
       }
-      
       localStorage.setItem("userProfile", JSON.stringify(profile))
-
       setStep(2)
       toast({
         title: "Berhasil",
@@ -113,7 +294,6 @@ export default function UploadCVPage() {
         localStorage.setItem("userProfile", JSON.stringify(profile))
       }
 
-      setAnalysisResult(mockAnalysis)
       setAnalysisComplete(true)
       setStep(3)
 
@@ -166,7 +346,7 @@ export default function UploadCVPage() {
         {/* Header */}
         <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <Brain className="w-5 h-5 text-white" />
               </div>
@@ -213,8 +393,9 @@ export default function UploadCVPage() {
                     <Label htmlFor="name">Nama Lengkap</Label>
                     <Input
                       id="name"
+                      name="name"
                       value={personalInfo.name}
-                      onChange={(e) => setPersonalInfo({ ...personalInfo, name: e.target.value })}
+                      onChange={handleChange}
                       placeholder="John Doe"
                     />
                   </div>
@@ -222,9 +403,10 @@ export default function UploadCVPage() {
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       value={personalInfo.email}
-                      onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
+                      onChange={handleChange}
                       placeholder="john@example.com"
                       disabled
                     />
@@ -236,19 +418,49 @@ export default function UploadCVPage() {
                     <Label htmlFor="phone">Nomor Telepon</Label>
                     <Input
                       id="phone"
+                      name="phone"
                       value={personalInfo.phone}
-                      onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
+                      onChange={handleChange}
                       placeholder="+62 812 3456 7890"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="location">Lokasi</Label>
-                    <Input
-                      id="location"
-                      value={personalInfo.location}
-                      onChange={(e) => setPersonalInfo({ ...personalInfo, location: e.target.value })}
-                      placeholder="Jakarta, Indonesia"
-                    />
+                    <form onSubmit={handleSearch} className="flex gap-2 mb-2">
+                      <Input
+                        id="location-search"
+                        type="text"
+                        placeholder="Cari lokasi..."
+                        autoComplete="off"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button type="submit" className="bg-sky-500 text-white">Cari</Button>
+                    </form>
+                    {searchResults.length > 0 && (
+                      <ul className="bg-white border rounded shadow max-h-48 overflow-auto mb-2">
+                        {searchResults.map((result, idx) => (
+                          <li
+                            key={idx}
+                            className="p-2 hover:bg-sky-50 cursor-pointer"
+                            onClick={() => handleSelectResult(result)}
+                          >
+                            {result.display_name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div ref={mapContainer} style={{ width: "100%", height: 300, borderRadius: 8, border: "1px solid #e0e7ef" }} />
+                    {mapError && (
+                      <div className="text-red-600 text-sm mt-2">{mapError}</div>
+                    )}
+                    {personalInfo.location && (
+                      <div className="text-sm text-gray-600 mt-2">
+                        Lokasi dipilih: {personalInfo.location.address} (Lat: {personalInfo.location.lat}, Lng: {personalInfo.location.lng})
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-400 mt-1">*Cari lokasi atau klik pada peta untuk memilih lokasi</div>
                   </div>
                 </div>
 
@@ -256,9 +468,10 @@ export default function UploadCVPage() {
                   <Label htmlFor="experience_years">Pengalaman Kerja (Tahun)</Label>
                   <Input
                     id="experience_years"
+                    name="experience_years"
                     type="number"
                     value={personalInfo.experience_years}
-                    onChange={(e) => setPersonalInfo({ ...personalInfo, experience_years: e.target.value })}
+                    onChange={handleChange}
                     placeholder="3"
                     min="0"
                     max="50"
@@ -269,8 +482,9 @@ export default function UploadCVPage() {
                   <Label htmlFor="summary">Ringkasan Profesional (Opsional)</Label>
                   <Textarea
                     id="summary"
+                    name="summary"
                     value={personalInfo.summary}
-                    onChange={(e) => setPersonalInfo({ ...personalInfo, summary: e.target.value })}
+                    onChange={handleChange}
                     placeholder="Ceritakan sedikit tentang pengalaman dan tujuan karir Anda..."
                     rows={4}
                   />
@@ -302,7 +516,7 @@ export default function UploadCVPage() {
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx"
-                    onChange={handleFileUpload}
+                    onChange={handleFileChange}
                     className="hidden"
                     id="cv-upload"
                   />
@@ -329,7 +543,15 @@ export default function UploadCVPage() {
                   </label>
                 </div>
 
-                {cvFile && (
+                {/* Progress bar for upload */}
+                {isAnalyzing && uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="w-full">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <div className="text-sm text-sky-600 text-center mt-1">Mengupload CV... {uploadProgress}%</div>
+                  </div>
+                )}
+
+                {cvFile && !isAnalyzing && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="w-5 h-5 text-emerald-500" />
@@ -344,17 +566,23 @@ export default function UploadCVPage() {
                     onClick={() => setStep(1)}
                     variant="outline"
                     className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
+                    disabled={isAnalyzing}
                   >
                     <ArrowLeft className="mr-2 w-4 h-4" />
                     Kembali
                   </Button>
                   <Button
-                    onClick={handleCVAnalysis}
-                    className="flex-1 bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600"
-                    disabled={!cvFile}
+                    onClick={e => handleSubmit(e)}
+                    className="flex-1 bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 flex items-center justify-center"
+                    disabled={!cvFile || isAnalyzing}
                   >
-                    Mulai Analisis AI
-                    <Brain className="ml-2 w-4 h-4" />
+                    {isAnalyzing && (
+                      <span className="mr-2 inline-block align-middle">
+                        <span className="w-4 h-4 border-2 border-white border-t-emerald-500 rounded-full animate-spin inline-block"></span>
+                      </span>
+                    )}
+                    {isAnalyzing ? 'Menganalisis...' : 'Upload CV'}
+                    <Upload className="ml-2 w-4 h-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -375,6 +603,13 @@ export default function UploadCVPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Loading indicator when analyzing */}
+                {isAnalyzing && (
+                  <div className="flex flex-col items-center justify-center space-y-2 py-6">
+                    <div className="w-12 h-12 border-4 border-sky-300 border-t-emerald-500 rounded-full animate-spin"></div>
+                    <div className="text-sky-700 font-medium">Sedang menganalisis CV Anda...</div>
+                  </div>
+                )}
                 {isAnalyzing ? (
                   <div className="text-center space-y-4">
                     <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
@@ -407,28 +642,7 @@ export default function UploadCVPage() {
                       <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-white" />
                     </div>
 
-                    {analysisResult && (
-                      <div className="bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 rounded-lg p-4 md:p-6">
-                        <h3 className="font-semibold text-emerald-700 mb-3">Hasil Analisis:</h3>
-                        <div className="text-sm space-y-2 text-left">
-                          <p>
-                            ✓ <strong>Skill Teknis:</strong> {analysisResult.skills.join(", ")}
-                          </p>
-                          <p>
-                            ✓ <strong>Skill Tersembunyi:</strong> {analysisResult.hiddenSkills.join(", ")}
-                          </p>
-                          <p>
-                            ✓ <strong>Industri Cocok:</strong> {analysisResult.industries.join(", ")}
-                          </p>
-                          <p>
-                            ✓ <strong>Level:</strong> {analysisResult.level}
-                          </p>
-                          <p>
-                            ✓ <strong>Pengalaman:</strong> {analysisResult.experience.totalYears} tahun
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                    {/* Removed analysisResult display */}
 
                     <div className="space-y-4">
                       <Link href="/mbti-test">

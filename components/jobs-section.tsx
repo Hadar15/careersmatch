@@ -8,6 +8,7 @@ import { JobCard } from "@/components/job-card"
 import { remotiveAPI, type RemotiveJob } from "@/lib/remotive-api"
 import { Briefcase, ArrowRight, Loader2, RefreshCw, Filter, Building, Star, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import { formatJobType } from "@/lib/utils"
 
 export function JobsSection() {
   const [jobs, setJobs] = useState<RemotiveJob[]>([])
@@ -31,8 +32,15 @@ export function JobsSection() {
         job.url && 
         !job.url.includes('example.com') && 
         job.company_name && 
-        !job.company_name.includes('Indonesia') &&
-        job.id > 1000 // Real Remotive jobs typically have higher IDs
+        !job.company_name.includes('TechCorp Indonesia') &&
+        !job.company_name.includes('Digital Solutions') &&
+        !job.company_name.includes('Creative Studio') &&
+        !job.company_name.includes('AI Research Lab') &&
+        !job.company_name.includes('CloudTech Solutions') &&
+        !job.company_name.includes('Startup Indonesia') &&
+        !job.company_name.includes('App Studio') &&
+        !job.company_name.includes('Quality Assurance Inc') &&
+        !job.company_name.includes('IT Solutions')
       )
 
       if (isRealRemotiveData) {
@@ -174,7 +182,7 @@ export function JobsSection() {
             <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Live Jobs from Remotive
           </Badge>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent leading-tight pb-2">
             Latest Job Opportunities
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">
@@ -237,7 +245,7 @@ export function JobsSection() {
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold text-gray-800 text-xs sm:text-sm line-clamp-2 flex-1 mr-2">{job.title}</h4>
                       <Badge variant="outline" className="text-xs border-sky-200 text-sky-600 shrink-0">
-                        {job.job_type}
+                        {formatJobType(job.job_type)}
                       </Badge>
                     </div>
                     <p className="text-sky-600 font-medium text-xs mb-2">{job.company_name}</p>

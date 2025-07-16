@@ -125,15 +125,20 @@ class RemotiveAPI {
       url: sampleJob.url
     });
     
-    // Check for indicators of mock data
+    // Only check for obvious mock data indicators
     const isMockData = 
       sampleJob.url?.includes('example.com') ||
-      sampleJob.company_name?.includes('Indonesia') ||
-      sampleJob.id < 1000 ||
-      sampleJob.title === "Frontend Developer" && sampleJob.company_name === "TechCorp Indonesia" ||
+      sampleJob.company_name?.includes('TechCorp Indonesia') ||
+      sampleJob.company_name?.includes('Digital Solutions') ||
+      sampleJob.company_name?.includes('Creative Studio') ||
+      sampleJob.company_name?.includes('AI Research Lab') ||
+      sampleJob.company_name?.includes('CloudTech Solutions') ||
+      sampleJob.company_name?.includes('Startup Indonesia') ||
+      sampleJob.company_name?.includes('App Studio') ||
+      sampleJob.company_name?.includes('Quality Assurance Inc') ||
+      sampleJob.company_name?.includes('IT Solutions') ||
       !sampleJob.url || 
-      !sampleJob.company_name ||
-      sampleJob.url === "https://example.com/job1";
+      !sampleJob.company_name;
 
     if (isMockData) {
       console.log("❌ Detected mock data indicators");

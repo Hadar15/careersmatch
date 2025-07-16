@@ -1,9 +1,11 @@
+// Random comment: Testing commit and push to GitHub
 "use client"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { JobsSection } from "@/components/jobs-section"
+import { CoursesSection } from "@/components/courses-section"
 import {
   ArrowRight,
   Brain,
@@ -22,17 +24,27 @@ import {
   X,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth"
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Removed redirect logic and unused variables
+    }
+  }, []);
 
   return (
     <div className="min-h-screen">
       {/* Header */}
       <header className="border-b border-sky-100 bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <Link href="/" className="flex items-center space-x-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
               <Brain className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
             </div>
@@ -42,7 +54,7 @@ export default function HomePage() {
               </span>
               <div className="text-xs font-medium text-emerald-600 hidden sm:block">AI-Powered Career Platform</div>
             </div>
-          </div>
+          </Link>
           
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
@@ -51,6 +63,9 @@ export default function HomePage() {
             </Link>
             <Link href="#jobs" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Jobs
+            </Link>
+            <Link href="#courses" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+              Courses
             </Link>
             <Link href="#how-it-works" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
               Cara Kerja
@@ -63,19 +78,29 @@ export default function HomePage() {
 
           {/* Desktop Buttons */}
           <div className="hidden lg:flex items-center space-x-3">
-            <Link href="/auth/login">
-              <Button
-                variant="outline"
-                className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
-              >
-                Masuk
-              </Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
-                Daftar Gratis
-              </Button>
-            </Link>
+            {user ? (
+              <Link href="/profile">
+                <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
+                  Profil saya
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/auth/login">
+                  <Button
+                    variant="outline"
+                    className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+                  >
+                    Masuk
+                  </Button>
+                </Link>
+                <Link href="/auth/register">
+                  <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
+                    Daftar Gratis
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -111,6 +136,13 @@ export default function HomePage() {
                   Jobs
                 </Link>
                 <Link 
+                  href="#courses" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Courses
+                </Link>
+                <Link 
                   href="#how-it-works" 
                   className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
                   onClick={() => setMobileMenuOpen(false)}
@@ -118,23 +150,36 @@ export default function HomePage() {
                   Cara Kerja
                 </Link>
                 <div className="flex items-center space-x-4 pt-4">
-                  <Link href="/auth/login" className="flex-1">
-                    <Button
-                      variant="outline"
-                      className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Masuk
-                    </Button>
-                  </Link>
-                  <Link href="/auth/register" className="flex-1">
-                    <Button 
-                      className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Daftar
-                    </Button>
-                  </Link>
+                  {user ? (
+                    <Link href="/profile" className="flex-1">
+                      <Button
+                        className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Profil saya
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href="/auth/login" className="flex-1">
+                        <Button
+                          variant="outline"
+                          className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Masuk
+                        </Button>
+                      </Link>
+                      <Link href="/auth/register" className="flex-1">
+                        <Button 
+                          className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Daftar
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </nav>
             </div>
@@ -167,8 +212,8 @@ export default function HomePage() {
             </span>
             <div className="flex flex-col sm:flex-row items-center justify-center mt-4 sm:mt-6 space-y-2 sm:space-y-0 sm:space-x-4">
               <span className="text-gray-700 text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">dengan</span>
-              <div className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl shadow-xl">
-                <span className="text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl">AI</span>
+              <div className="flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-2xl shadow-xl">
+                <span className="text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl py-3">AI</span>
               </div>
             </div>
           </h1>
@@ -180,7 +225,7 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 mb-12 sm:mb-16">
-            <Link href="/auth/register" className="w-full sm:w-auto">
+            <Link href={user ? "/dashboard" : "/auth/register"} className="w-full sm:w-auto">
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
@@ -231,8 +276,14 @@ export default function HomePage() {
       </section>
 
       {/* Jobs Section from Remotive API */}
-      <section id="jobs">
+      <section id="jobs" className="py-12 px-4 bg-white/60 backdrop-blur-sm">
         <JobsSection />
+      </section>
+
+      {/* Courses Section */}
+      <section id="courses" className="py-12 px-4 bg-white/60 backdrop-blur-sm">
+        {/* Komponen baru untuk kursus */}
+        <CoursesSection />
       </section>
 
       {/* Features Section */}
@@ -243,7 +294,7 @@ export default function HomePage() {
               <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Fitur Unggulan
             </Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent leading-tight pb-2">
               Teknologi AI Terdepan
             </h2>
             <p className="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">
@@ -359,7 +410,7 @@ export default function HomePage() {
               <Zap className="w-5 h-5 mr-2" />
               Proses Mudah
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent leading-tight pb-2">
               4 Langkah Menuju Karir Impian
             </h2>
             <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">

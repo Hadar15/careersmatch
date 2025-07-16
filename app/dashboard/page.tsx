@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/mock-auth"
+import { useAuth } from "@/lib/auth"
 import { getUserProfile, mockJobListings, mockCourses, mockSkillGaps, type UserProfile } from "@/lib/mock-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,9 +13,11 @@ import { Brain, MapPin, DollarSign, User, BookOpen, Clock, ArrowRight, Star, Upl
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import type { User as SupabaseUser } from "@supabase/supabase-js" // Kept from 'toriq' branch
+import { formatJobType } from "@/lib/utils" // Kept from 'main' branch
 
 export default function DashboardPage() {
-  const { user, signOut } = useAuth()
+  const { user, signOut }: { user: SupabaseUser | null, signOut: () => Promise<void> } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -23,29 +25,34 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
+      // Check if the cached profile matches the current user
+      let userProfile = null;
       try {
-        // Load profile from localStorage
-        const userProfile = getUserProfile()
-        setProfile(userProfile)
-      } catch (error) {
-        console.error("Error loading user profile:", error)
-        // Set default profile if there's an error
-        setProfile({
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
-          phone: null,
-          location: null,
-          professional_summary: null,
-          experience_years: null,
-          mbti_type: null,
-          profile_completion: 20,
-        })
-      } finally {
-        setLoading(false)
+        userProfile = getUserProfile();
+      } catch {}
+      if (
+        userProfile &&
+        (userProfile.id !== user.id || userProfile.email !== user.email)
+      ) {
+        // Clear local profile if it doesn't match the logged-in user
+        localStorage.removeItem("userProfile");
+        userProfile = null;
       }
+      // Set profile with fallback to local profile for extra fields
+      setProfile({
+        id: user.id,
+        email: user.email || "",
+        full_name: user.user_metadata?.full_name || user.email?.split("@")?.[0] || "User",
+        phone: userProfile?.phone || null,
+        location: userProfile?.location || null,
+        professional_summary: userProfile?.professional_summary || null,
+        experience_years: userProfile?.experience_years || null,
+        mbti_type: userProfile?.mbti_type || null,
+        profile_completion: userProfile?.profile_completion || 20,
+      });
+      setLoading(false);
     }
-  }, [user])
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -145,7 +152,7 @@ export default function DashboardPage() {
           {/* Welcome Section */}
           <div className="mb-6 md:mb-8">
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-              Selamat Datang, {profile?.full_name || user?.full_name || "User"}!
+              Selamat Datang, {user?.user_metadata?.full_name || user?.email?.split("@")?.[0] || "User"}!
             </h1>
             <p className="text-gray-600">Dashboard lengkap untuk mengelola pencarian karir Anda</p>
           </div>
@@ -285,7 +292,7 @@ export default function DashboardPage() {
                               <span>{job.salary}</span>
                             </div>
                             <Badge variant="outline" className="border-emerald-200 text-emerald-600">
-                              {job.type}
+                              {formatJobType(job.type)}
                             </Badge>
                           </div>
                         </div>
@@ -305,56 +312,6 @@ export default function DashboardPage() {
                         </div>
                         <Button className="w-full md:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
                           Lihat Detail
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            {/* Courses Tab */}
-            <TabsContent value="courses" className="space-y-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800">Rekomendasi Course</h2>
-                <Button className="w-full md:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                  Lihat Semua Course
-                </Button>
-              </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {topCourses.map((course) => (
-                  <Card key={course.id} className="border-sky-100 hover:shadow-lg transition-all duration-300">
-                    <CardHeader className="p-4 md:p-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge
-                          className={`text-xs ${
-                            course.relevance === "High"
-                              ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                              : "bg-sky-50 text-sky-600 border-sky-200"
-                          }`}
-                        >
-                          {course.relevance} Relevance
-                        </Badge>
-                        <div className="flex items-center space-x-1">
-                          <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                          <span className="text-sm font-medium">{course.rating}</span>
-                        </div>
-                      </div>
-                      <CardTitle className="text-base md:text-lg">{course.title}</CardTitle>
-                      <CardDescription className="text-sm">{course.provider}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 md:p-6 pt-0">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-4 h-4 text-gray-500" />
-                            <span>{course.duration}</span>
-                          </div>
-                          <span className="font-semibold text-emerald-600">{course.price}</span>
-                        </div>
-                        <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                          Mulai Course
                         </Button>
                       </div>
                     </CardContent>

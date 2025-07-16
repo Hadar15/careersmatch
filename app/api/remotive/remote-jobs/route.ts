@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  // Access the OpenAI API key from environment variables
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  // You can now use openaiApiKey in your server-side logic
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -30,16 +33,26 @@ export async function GET(request: NextRequest) {
     
     console.log('📊 Server-side API response:', {
       jobCount: data.jobs?.length || 0,
-      firstJob: data.jobs?.[0]?.title || 'No jobs'
+      firstJob: data.jobs?.[0]?.title || 'No jobs',
+      hasJobs: !!data.jobs,
+      isArray: Array.isArray(data.jobs)
     });
 
-    return NextResponse.json(data, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
+    // Check if we have valid job data
+    if (data.jobs && Array.isArray(data.jobs) && data.jobs.length > 0) {
+      console.log('✅ Valid job data received from Remotive API');
+      return NextResponse.json(data, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    } else {
+      console.log('⚠️ No valid job data in response, falling back to mock data');
+      throw new Error('No valid job data in API response');
+    }
+
   } catch (error) {
     console.error('❌ Server-side API error:', error);
     

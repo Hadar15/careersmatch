@@ -25,6 +25,7 @@ import {
   ArrowRight,
 } from "lucide-react"
 import Link from "next/link"
+import { formatJobType } from "@/lib/utils"
 
 const jobListings = [
   {
@@ -160,7 +161,7 @@ export default function JobMatchingPage() {
       job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.skills.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesLocation = locationFilter === "All" || job.location === locationFilter
-    const matchesType = typeFilter === "All" || job.type === typeFilter
+    const matchesType = typeFilter === "All" || formatJobType(job.type) === typeFilter
     const matchesIndustry = industryFilter === "All" || job.industry === industryFilter
 
     return matchesSearch && matchesLocation && matchesType && matchesIndustry
@@ -220,7 +221,7 @@ export default function JobMatchingPage() {
               98% Akurasi
             </Badge>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-3 leading-tight pb-2">
             Job Matching Results
           </h1>
           <p className="text-xl text-gray-600 font-medium">
@@ -377,7 +378,7 @@ export default function JobMatchingPage() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <Briefcase className="w-4 h-4" />
-                          <span className="font-medium">{job.type}</span>
+                          <span className="font-medium">{formatJobType(job.type)}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <DollarSign className="w-4 h-4" />

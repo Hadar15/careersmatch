@@ -1,7 +1,8 @@
 import type React from "react"
 import "./globals.css"
 import { Inter } from "next/font/google"
-import { AuthProvider } from "@/lib/auth-context"
+import "./globals.css"
+import { AuthProvider } from "@/lib/auth"
 import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
