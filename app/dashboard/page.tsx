@@ -315,56 +315,6 @@ export default function DashboardPage() {
               </div>
             </TabsContent>
 
-            {/* Courses Tab */}
-            <TabsContent value="courses" className="space-y-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800">Rekomendasi Course</h2>
-                <Button className="w-full md:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                  Lihat Semua Course
-                </Button>
-              </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {topCourses.map((course) => (
-                  <Card key={course.id} className="border-sky-100 hover:shadow-lg transition-all duration-300">
-                    <CardHeader className="p-4 md:p-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge
-                          className={`text-xs ${
-                            course.relevance === "High"
-                              ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                              : "bg-sky-50 text-sky-600 border-sky-200"
-                          }`}
-                        >
-                          {course.relevance} Relevance
-                        </Badge>
-                        <div className="flex items-center space-x-1">
-                          <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                          <span className="text-sm font-medium">{course.rating}</span>
-                        </div>
-                      </div>
-                      <CardTitle className="text-base md:text-lg">{course.title}</CardTitle>
-                      <CardDescription className="text-sm">{course.provider}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 md:p-6 pt-0">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-4 h-4 text-gray-500" />
-                            <span>{course.duration}</span>
-                          </div>
-                          <span className="font-semibold text-emerald-600">{course.price}</span>
-                        </div>
-                        <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                          Mulai Course
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
             {/* Skills Analysis Tab */}
             <TabsContent value="skills" className="space-y-6">
               <h2 className="text-xl md:text-2xl font-bold text-gray-800">Analisis Skill Gap</h2>

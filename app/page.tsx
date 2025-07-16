@@ -255,12 +255,13 @@ export default function HomePage() {
       </section>
 
       {/* Jobs Section from Remotive API */}
-      <section id="jobs">
+      <section id="jobs" className="py-12 px-4 bg-white/60 backdrop-blur-sm">
         <JobsSection />
       </section>
 
-      {/* Courses Section from Class Central API */}
-      <section id="courses">
+      {/* Courses Section */}
+      <section id="courses" className="py-12 px-4 bg-white/60 backdrop-blur-sm">
+        {/* Komponen baru untuk kursus */}
         <CoursesSection />
       </section>
 

@@ -1,268 +1,188 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { CourseCard } from "@/components/course-card"
-import type { Course } from "@/app/api/courses/classcentral/route"
-import { BookOpen, ArrowRight, Loader2, RefreshCw, Filter, GraduationCap, Star, CheckCircle, AlertCircle } from "lucide-react"
-import Link from "next/link"
+import { useEffect, useState, useRef } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+interface Course {
+  id: string;
+  name: string;
+  description: string;
+  photoUrl?: string;
+  partnerLogo?: string;
+  startDate?: string;
+  primaryLanguages?: string[];
+}
+
+const PAGE_SIZE = 24;
+const API_URL = "/api/coursera-courses";
 
 export function CoursesSection() {
-  const [courses, setCourses] = useState<Course[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isUsingMockData, setIsUsingMockData] = useState(false)
-  const [dataSource, setDataSource] = useState<'classcentral' | 'mock' | 'fallback' | null>(null)
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [start, setStart] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [langFilter, setLangFilter] = useState<string>("");
+  const loader = useRef<HTMLDivElement | null>(null);
+  const [languages, setLanguages] = useState<string[]>([]);
 
-  const fetchCourses = async () => {
+  // Fetch courses from Coursera API
+  const fetchCourses = async (reset = false) => {
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true)
-      setError(null)
-      setIsUsingMockData(false)
-      setDataSource(null)
-
-      const response = await fetch('/api/courses/classcentral')
-      const data = await response.json()
-
-      // Check data source from API response
-      if (data.dataSource && data.dataSource !== 'mock' && data.dataSource !== 'fallback') {
-        setDataSource('classcentral')
-        console.log("✅ Successfully fetched courses from Class Central API:", data.courses.length, "courses")
-        console.log("📡 Data source:", data.dataSource)
-      } else if (data.dataSource === 'fallback') {
-        setDataSource('fallback')
-        setIsUsingMockData(true)
-        setError("Tidak dapat mengakses Class Central API. Menampilkan data contoh.")
-        console.log("⚠️ Using fallback data - API returned fallback data")
-      } else {
-        setDataSource('mock')
-        setIsUsingMockData(true)
-        console.log("⚠️ Using mock data - API returned mock data")
-      }
-
-      setCourses(data.courses)
-    } catch (err) {
-      console.error("❌ Error fetching courses:", err)
-      
-      // Use enhanced mock data as fallback
-      const mockCourses: Course[] = [
-        {
-          id: "course-1-error",
-          title: "CS50's Introduction to Computer Science",
-          link: "https://www.classcentral.com/course/edx-cs50s-introduction-to-computer-science-9656",
-          pubDate: new Date().toISOString(),
-          contentSnippet: "An introduction to the intellectual enterprises of computer science and the art of programming.",
-          category: "Computer Science",
-          provider: "Harvard University"
-        },
-        {
-          id: "course-2-error",
-          title: "Machine Learning by Stanford University",
-          link: "https://www.classcentral.com/course/coursera-machine-learning-835",
-          pubDate: new Date(Date.now() - 86400000).toISOString(),
-          contentSnippet: "Learn about machine learning algorithms and their applications in real-world scenarios.",
-          category: "Artificial Intelligence",
-          provider: "Stanford University"
-        },
-        {
-          id: "course-3-error",
-          title: "The Complete Web Developer Bootcamp",
-          link: "https://www.classcentral.com/course/udemy-the-complete-web-developer-bootcamp-12345",
-          pubDate: new Date(Date.now() - 172800000).toISOString(),
-          contentSnippet: "Learn web development from scratch with HTML, CSS, JavaScript, and modern frameworks.",
-          category: "Web Development",
-          provider: "Udemy"
-        },
-        {
-          id: "course-4-error",
-          title: "Data Science: Machine Learning",
-          link: "https://www.classcentral.com/course/edx-data-science-machine-learning-6789",
-          pubDate: new Date(Date.now() - 259200000).toISOString(),
-          contentSnippet: "Build a movie recommendation system and learn the science behind one of the most popular and successful data science techniques.",
-          category: "Data Science",
-          provider: "MIT"
-        },
-        {
-          id: "course-5-error",
-          title: "Python for Everybody",
-          link: "https://www.classcentral.com/course/coursera-python-for-everybody-2345",
-          pubDate: new Date(Date.now() - 345600000).toISOString(),
-          contentSnippet: "Learn to program and analyze data with Python. Develop programs to gather, clean, analyze, and visualize data.",
-          category: "Programming",
-          provider: "University of Michigan"
-        },
-        {
-          id: "course-6-error",
-          title: "Introduction to Cybersecurity",
-          link: "https://www.classcentral.com/course/edx-introduction-to-cybersecurity-3456",
-          pubDate: new Date(Date.now() - 432000000).toISOString(),
-          contentSnippet: "Learn the basics of cybersecurity, network security, and ethical hacking principles.",
-          category: "Cybersecurity",
-          provider: "Coursera"
-        }
+      const params = [
+        `start=${reset ? 0 : start}`,
+        `limit=${PAGE_SIZE}`,
+        "fields=name,description,photoUrl,partnerLogo,startDate,primaryLanguages"
       ];
-      
-      setCourses(mockCourses)
-      setIsUsingMockData(true)
-      setDataSource('fallback')
-      setError("Tidak dapat mengakses Class Central API. Menampilkan data contoh.")
-      console.log("⚠️ Using fallback mock data due to API error")
+      const url = `${API_URL}?${params.join("&")}`;
+      const res = await fetch(url);
+      if (res.status === 404) {
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      let newCourses: Course[] = data.elements || [];
+      // Filter by language if needed
+      if (langFilter) {
+        newCourses = newCourses.filter((c) => c.primaryLanguages && c.primaryLanguages.includes(langFilter));
+      }
+      setCourses((prev) => reset ? newCourses : [...prev, ...newCourses]);
+      setHasMore(newCourses.length === PAGE_SIZE);
+      // Kumpulkan semua bahasa unik
+      if (reset) {
+        const langs = new Set<string>();
+        (data.elements || []).forEach((c: Course) => {
+          if (c.primaryLanguages) c.primaryLanguages.forEach((l: string) => langs.add(l));
+        });
+        setLanguages(Array.from(langs));
+      }
+    } catch (e) {
+      setError("Gagal memuat data kursus dari Coursera.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
+  // Initial fetch & filter change
   useEffect(() => {
-    fetchCourses()
-  }, [])
+    setCourses([]);
+    setStart(0);
+    fetchCourses(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [langFilter]);
 
-  const handleRefresh = () => {
-    fetchCourses()
-  }
+  // Hanya tampilkan bahasa Indonesia dan Inggris di filter
+  const allowedLangs = languages.filter(l => l === 'id' || l === 'en');
+
+  // Infinite scroll
+  useEffect(() => {
+    if (!hasMore || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setStart((prev) => prev + PAGE_SIZE);
+        }
+      },
+      { threshold: 1 }
+    );
+    if (loader.current) observer.observe(loader.current);
+    return () => {
+      if (loader.current) observer.unobserve(loader.current);
+    };
+  }, [hasMore, loading]);
+
+  // Fetch next page when start changes (except first load)
+  useEffect(() => {
+    if (start === 0) return;
+    fetchCourses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [start]);
+
+  // Handle filter change
+  const handleFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setLangFilter(e.target.value);
+  };
 
   return (
-    <section className="py-12 sm:py-16 md:py-20 px-4 bg-white/60 backdrop-blur-sm">
-      <div className="container mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-8 sm:mb-12">
-          <Badge className="mb-4 sm:mb-6 bg-gradient-to-r from-emerald-50 to-sky-50 text-emerald-700 border-emerald-200 px-4 sm:px-6 py-2 sm:py-3 font-medium">
-            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            Free Courses from Class Central
-          </Badge>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent">
-            Latest Online Courses
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4 font-medium leading-relaxed">
-            Discover amazing free courses from top universities and platforms worldwide
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4 mt-4 sm:mt-6">
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              className="w-full sm:w-auto border-emerald-200 text-emerald-600 hover:bg-emerald-50 bg-transparent"
-            >
-              <RefreshCw className="mr-2 w-4 h-4" />
-              Refresh Courses
-            </Button>
-            <Link href="/mbti-test" className="w-full sm:w-auto">
-              <Button className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600">
-                <Filter className="mr-2 w-4 h-4" />
-                Find Your Path
-              </Button>
-            </Link>
+    <div className="container mx-auto">
+      <div className="relative flex justify-center">
+        <div
+          className="rounded-xl shadow-xl bg-white/80 backdrop-blur-md flex flex-col items-center"
+          style={{ maxHeight: 600, minHeight: 300, maxWidth: 900, margin: '0 auto', width: '100%', padding: 24 }}
+        >
+          <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-sky-400 to-emerald-400 shadow-lg mr-2">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="#38bdf8"/><path d="M12 6.5c-2.48 0-4.5 2.02-4.5 4.5s2.02 4.5 4.5 4.5 4.5-2.02 4.5-4.5-2.02-4.5-4.5-4.5zm0 7c-1.38 0-2.5-1.12-2.5-2.5S10.62 8.5 12 8.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#06b6d4"/></svg>
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent drop-shadow">Kursus Online Coursera</h2>
+            </div>
+            <div>
+              <select
+                className="border border-sky-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                value={langFilter}
+                onChange={handleFilter}
+              >
+                <option value="">Bahasa Indonesia & Inggris</option>
+                {allowedLangs.map((l) => (
+                  <option key={l} value={l}>{l === 'id' ? 'Bahasa Indonesia' : l === 'en' ? 'English' : l}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
-
-        {/* Compact Courses Container */}
-        <div className="max-w-6xl mx-auto">
-          <Card className="border-emerald-100 bg-white/90 backdrop-blur-sm shadow-xl">
-            <CardContent className="p-4 sm:p-6">
-              {/* Error Message - Always show if there's an error */}
-              {error && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="flex items-center text-yellow-800">
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    <span className="text-sm font-medium">{error}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 flex items-center">
-                  <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 mr-2" />
-                  Available Courses
-                </h3>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                  <Badge variant="outline" className="border-gray-200 text-gray-600 text-xs sm:text-sm">
-                    {courses.length} Courses Available
-                  </Badge>
-                  {dataSource === 'classcentral' ? (
-                    <Badge variant="outline" className="border-green-200 text-green-600 flex items-center text-xs sm:text-sm">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Live Data
-                    </Badge>
-                  ) : dataSource === 'fallback' ? (
-                    <Badge variant="outline" className="border-orange-200 text-orange-600 flex items-center text-xs sm:text-sm">
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      Enhanced Demo
-                    </Badge>
-                  ) : dataSource === 'mock' ? (
-                    <Badge variant="outline" className="border-yellow-200 text-yellow-600 flex items-center text-xs sm:text-sm">
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      Demo Data
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="border-gray-200 text-gray-500 flex items-center text-xs sm:text-sm">
-                      Unknown Source
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              {/* Loading State */}
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                    <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-spin" />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Loading Courses from Class Central</h3>
-                  <p className="text-sm sm:text-base text-gray-600">Fetching the latest courses for you...</p>
-                </div>
-              ) : (
-                /* Courses Grid - Responsive with better mobile layout */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-h-[400px] sm:max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-gray-100">
-                  {courses.map((course) => (
-                    <div key={course.id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 hover:border-emerald-300 transition-colors hover:shadow-md">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-gray-800 text-xs sm:text-sm line-clamp-2 flex-1 mr-2">{course.title}</h4>
-                        <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-600 shrink-0">
-                          Free
-                        </Badge>
-                      </div>
-                      <p className="text-emerald-600 font-medium text-xs mb-2">{course.provider}</p>
-                      <div className="flex items-center text-xs text-gray-500 mb-3">
-                        <span className="flex items-center">
-                          🎓 {course.category}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400">
-                          {new Date(course.pubDate).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                          })}
-                        </span>
-                        <Button
-                          size="sm"
-                          className="text-xs bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white px-2 py-1 h-6"
-                          onClick={() => window.open(course.link, '_blank')}
-                        >
-                          View
-                          <ArrowRight className="ml-1 w-3 h-3" />
-                        </Button>
-                      </div>
+          {error && <div className="text-red-500 mb-4">{error}</div>}
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto w-full"
+            style={{ flex: 1 }}
+            onScroll={e => {
+              const el = e.currentTarget;
+              if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10 && hasMore && !loading) {
+                setStart(prev => prev + PAGE_SIZE);
+              }
+            }}
+          >
+            {courses
+              .filter(course => {
+                // Jika filter kosong, hanya tampilkan kursus dengan id/en
+                if (!langFilter) return course.primaryLanguages && (course.primaryLanguages.includes('id') || course.primaryLanguages.includes('en'));
+                return course.primaryLanguages && course.primaryLanguages.includes(langFilter);
+              })
+              .map((course, idx) => (
+                <Card key={course.id || idx} className="border-sky-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white/90 backdrop-blur-sm group cursor-pointer">
+                  <CardContent className="p-6 flex flex-col h-full">
+                    <div className="flex items-center mb-3">
+                      {course.partnerLogo && <img src={course.partnerLogo} alt="logo" className="w-8 h-8 mr-2 rounded bg-white object-contain border" />}
+                      <Badge className="bg-gradient-to-r from-sky-50 to-emerald-50 text-sky-700 border-sky-200 px-3 py-1 text-xs font-medium mr-2">Coursera</Badge>
+                      {course.primaryLanguages && course.primaryLanguages.length > 0 && (
+                        <span className="text-gray-400 text-xs">{course.primaryLanguages.join(", ")}</span>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* View All Courses Button */}
-              <div className="text-center mt-6">
-                <Link href="/mbti-test">
-                  <Button className="bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white shadow-lg">
-                    Find Your Perfect Course
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+                    <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-2">{course.name}</h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-1">{course.description}</p>
+                    {course.photoUrl && (
+                      <img src={course.photoUrl} alt={course.name} className="w-full h-32 object-cover rounded mb-3" />
+                    )}
+                    <Button
+                      asChild
+                      className="mt-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg text-xs px-4 py-2 h-8"
+                    >
+                      <a href={`https://www.coursera.org/learn/${course.id}`} target="_blank" rel="noopener noreferrer">Lihat Detail</a>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+          {loading && <div className="text-center py-6 text-sky-600 font-semibold absolute left-0 right-0 bottom-0 bg-gradient-to-t from-white/80 to-transparent">Memuat...</div>}
+          {!hasMore && !loading && (
+            <div className="text-center py-6 text-gray-400 absolute left-0 right-0 bottom-0 bg-gradient-to-t from-white/80 to-transparent">Tidak ada lagi kursus.</div>
+          )}
         </div>
       </div>
-    </section>
-  )
+    </div>
+  );
 } 
