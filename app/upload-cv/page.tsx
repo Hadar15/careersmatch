@@ -50,6 +50,8 @@ export default function UploadCVPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState("");
+  // Add state for upload progress
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Initialize MapLibre map
   useEffect(() => {
@@ -166,21 +168,31 @@ export default function UploadCVPage() {
       return;
     }
     setIsAnalyzing(true);
+    setUploadProgress(0);
     try {
-      // Upload CV and userId to the API route for processing
+      // Use XMLHttpRequest for progress
       const formData = new FormData();
       formData.append('file', cvFile);
       formData.append('userId', user.id);
-      const response = await fetch('/api/upload-cv', {
-        method: 'POST',
-        body: formData,
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload-cv');
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setUploadProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error(xhr.responseText || 'Terjadi kesalahan saat upload.'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Terjadi kesalahan saat upload.'));
+        xhr.send(formData);
       });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Terjadi kesalahan saat upload.');
-      }
       // Update or insert profile (as before)
-      console.log('[DEBUG] Upserting profile with location:', personalInfo.location);
       const { error: upsertError } = await supabase
         .from("profiles")
         .upsert({
@@ -196,10 +208,13 @@ export default function UploadCVPage() {
       if (upsertError) throw upsertError;
       setSuccess("CV dan profil berhasil diupload dan dianalisis!");
       setAnalysisComplete(true);
+      setUploadProgress(100);
+      setStep(3);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat upload.");
     } finally {
       setIsAnalyzing(false);
+      setTimeout(() => setUploadProgress(0), 1500); // Reset progress after short delay
     }
   };
 
@@ -528,7 +543,15 @@ export default function UploadCVPage() {
                   </label>
                 </div>
 
-                {cvFile && (
+                {/* Progress bar for upload */}
+                {isAnalyzing && uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="w-full">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <div className="text-sm text-sky-600 text-center mt-1">Mengupload CV... {uploadProgress}%</div>
+                  </div>
+                )}
+
+                {cvFile && !isAnalyzing && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="w-5 h-5 text-emerald-500" />
@@ -543,17 +566,23 @@ export default function UploadCVPage() {
                     onClick={() => setStep(1)}
                     variant="outline"
                     className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
+                    disabled={isAnalyzing}
                   >
                     <ArrowLeft className="mr-2 w-4 h-4" />
                     Kembali
                   </Button>
                   <Button
                     onClick={e => handleSubmit(e)}
-                    className="flex-1 bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600"
-                    disabled={!cvFile}
+                    className="flex-1 bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 flex items-center justify-center"
+                    disabled={!cvFile || isAnalyzing}
                   >
-                    Mulai Analisis AI
-                    <Brain className="ml-2 w-4 h-4" />
+                    {isAnalyzing && (
+                      <span className="mr-2 inline-block align-middle">
+                        <span className="w-4 h-4 border-2 border-white border-t-emerald-500 rounded-full animate-spin inline-block"></span>
+                      </span>
+                    )}
+                    {isAnalyzing ? 'Menganalisis...' : 'Upload CV'}
+                    <Upload className="ml-2 w-4 h-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -574,6 +603,13 @@ export default function UploadCVPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Loading indicator when analyzing */}
+                {isAnalyzing && (
+                  <div className="flex flex-col items-center justify-center space-y-2 py-6">
+                    <div className="w-12 h-12 border-4 border-sky-300 border-t-emerald-500 rounded-full animate-spin"></div>
+                    <div className="text-sky-700 font-medium">Sedang menganalisis CV Anda...</div>
+                  </div>
+                )}
                 {isAnalyzing ? (
                   <div className="text-center space-y-4">
                     <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
