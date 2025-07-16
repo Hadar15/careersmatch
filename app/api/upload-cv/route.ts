@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import mammoth from 'mammoth';
 
+// Helper function to extract text from PDF using pdf-parse
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  // Dynamically import pdf-parse to avoid issues with serverless/Next.js
+  const pdfParse = (await import('pdf-parse')).default;
+  const data = await pdfParse(buffer);
+  return data.text;
+}
+
 // Initialize Supabase client with service role key (server-side only)
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -23,12 +31,14 @@ export async function POST(request: NextRequest) {
     const fileObj = file as File;
     const fileName = fileObj.name;
     const fileExt = fileName.split('.').pop()?.toLowerCase();
+    console.log('Received file:', fileName, 'Type:', fileObj.type, 'Size:', fileObj.size, 'userId:', userId);
     if (!['pdf', 'docx'].includes(fileExt || '')) {
       return NextResponse.json({ error: 'Invalid file type. Only PDF and DOCX are allowed.' }, { status: 400 });
     }
 
     // 3. Upload the file to Supabase Storage
     const arrayBuffer = await fileObj.arrayBuffer();
+    console.log('arrayBuffer type:', typeof arrayBuffer, 'byteLength:', arrayBuffer.byteLength);
     if (!arrayBuffer || (arrayBuffer.byteLength !== undefined && arrayBuffer.byteLength === 0)) {
       return NextResponse.json({ error: 'Uploaded file is empty or could not be read.' }, { status: 400 });
     }
@@ -45,16 +55,20 @@ export async function POST(request: NextRequest) {
     let extractedText = '';
     if (fileExt === 'pdf') {
       try {
-        const pdfParse = (await import('pdf-parse')).default;
-        extractedText = (await pdfParse(Buffer.from(arrayBuffer))).text;
+        const buffer = Buffer.from(arrayBuffer);
+        extractedText = await extractTextFromPDF(buffer);
+        console.log('Extracted text length:', extractedText.length);
       } catch (err: any) {
+        console.error('PDF parse error:', err);
         return NextResponse.json({ error: 'Failed to parse PDF file', details: err.message }, { status: 500 });
       }
     } else if (fileExt === 'docx') {
       try {
         const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
         extractedText = result.value;
+        console.log('Extracted DOCX text length:', extractedText.length);
       } catch (err: any) {
+        console.error('DOCX parse error:', err);
         return NextResponse.json({ error: 'Failed to parse DOCX file', details: err.message }, { status: 500 });
       }
     }
