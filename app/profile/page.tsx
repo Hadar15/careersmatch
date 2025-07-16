@@ -7,10 +7,17 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Globe, Menu, X, Brain } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/");
+  };
 
   return (
     <div className="min-h-screen">
@@ -173,8 +180,8 @@ export default function ProfilePage() {
           </Card>
         </div>
       ) : (
-        <div className="min-h-screen flex flex-col items-center justify-center px-4">
-          <Card className="max-w-md w-full border-sky-100 shadow-xl">
+        <main className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+          <Card className="max-w-md w-full border-sky-100 shadow-xl mb-6">
             <CardHeader>
               <CardTitle>Profil Saya</CardTitle>
               <CardDescription>Informasi akun Anda</CardDescription>
@@ -190,7 +197,10 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+          <Button onClick={handleLogout} variant="outline" className="bg-red-50 border-2 border-red-600 text-red-600 hover:bg-red-100 py-2 px-6 text-base">
+            Logout
+          </Button>
+        </main>
       )}
     </div>
   );
