@@ -45,7 +45,7 @@ export default function LoginPage() {
           title: "Login Berhasil",
           description: "Selamat datang kembali!",
         })
-        router.push("/dashboard")
+        router.push("/")
       }
     } catch (err) {
       setError("Terjadi kesalahan yang tidak terduga")
@@ -74,10 +74,10 @@ export default function LoginPage() {
           variant: "destructive",
         })
       } else {
-        // Tunggu session berubah, lalu redirect ke dashboard
+        // Tunggu session berubah, lalu redirect ke landing page
         supabase.auth.onAuthStateChange((_event, session) => {
           if (session) {
-            router.push("/dashboard")
+            router.push("/")
           }
         })
       }

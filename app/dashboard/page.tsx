@@ -25,29 +25,34 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
+      // Check if the cached profile matches the current user
+      let userProfile = null;
       try {
-        // Load profile from localStorage
-        const userProfile = getUserProfile()
-        setProfile(userProfile)
-      } catch (error) {
-        console.error("Error loading user profile:", error)
-        // Set default profile if there's an error
-        setProfile({
-          id: user.id,
-          email: user.email || "",
-          full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
-          phone: null,
-          location: null,
-          professional_summary: null,
-          experience_years: null,
-          mbti_type: null,
-          profile_completion: 20,
-        })
-      } finally {
-        setLoading(false)
+        userProfile = getUserProfile();
+      } catch {}
+      if (
+        userProfile &&
+        (userProfile.id !== user.id || userProfile.email !== user.email)
+      ) {
+        // Clear local profile if it doesn't match the logged-in user
+        localStorage.removeItem("userProfile");
+        userProfile = null;
       }
+      // Set profile with fallback to local profile for extra fields
+      setProfile({
+        id: user.id,
+        email: user.email || "",
+        full_name: user.user_metadata?.full_name || user.email?.split("@")?.[0] || "User",
+        phone: userProfile?.phone || null,
+        location: userProfile?.location || null,
+        professional_summary: userProfile?.professional_summary || null,
+        experience_years: userProfile?.experience_years || null,
+        mbti_type: userProfile?.mbti_type || null,
+        profile_completion: userProfile?.profile_completion || 20,
+      });
+      setLoading(false);
     }
-  }, [user])
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -147,7 +152,7 @@ export default function DashboardPage() {
           {/* Welcome Section */}
           <div className="mb-6 md:mb-8">
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-              Selamat Datang, {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}!
+              Selamat Datang, {user?.user_metadata?.full_name || user?.email?.split("@")?.[0] || "User"}!
             </h1>
             <p className="text-gray-600">Dashboard lengkap untuk mengelola pencarian karir Anda</p>
           </div>
