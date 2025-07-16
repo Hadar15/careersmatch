@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama2',
+        model: 'deepseek-llm:7b', // Use DeepSeek-LLM 7B model
         prompt,
         stream: false,
       }),
