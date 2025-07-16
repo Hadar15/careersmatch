@@ -62,30 +62,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to extract text from CV.' }, { status: 500 });
     }
 
-    // 5. Call Ollama LLM to extract required info
-    const prompt = `Extract the following information from this CV:\n- Education\n- Organizational experience (within education)\n- Work experience\n- Soft skills\n- Hard skills\n\nReturn the result as a JSON object with keys: education, organizational_experience, work_experience, soft_skills, hard_skills.\n\nCV Content:\n"""\n${extractedText}\n"""`;
-    const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+    // 5. Call Gemini Pro API to extract required info
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Gemini API key not set in environment.' }, { status: 500 });
+    }
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const geminiBody = {
+      contents: [
+        { parts: [{ text: `Extract the following information from this CV:\n- Education\n- Organizational experience (within education)\n- Work experience\n- Soft skills\n- Hard skills\n- Hidden skills (skills that are not explicitly stated but can be inferred from the candidate's experiences; for example, if someone has organizational experience in the human resource department, infer people management as a hidden skill)\n\nReturn the result as a JSON object with keys: education, organizational_experience, work_experience, soft_skills, hard_skills, hidden_skills.\n\nCV Content:\n"""\n${extractedText}\n"""` }] }
+      ]
+    };
+    const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'deepseek-llm:7b', // Use DeepSeek-LLM 7B model
-        prompt,
-        stream: false,
-      }),
+      body: JSON.stringify(geminiBody),
     });
-    if (!ollamaResponse.ok) {
-      const errorText = await ollamaResponse.text();
-      return NextResponse.json({ error: 'Ollama API error', details: errorText }, { status: 500 });
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      return NextResponse.json({ error: 'Gemini API error', details: errorText }, { status: 500 });
     }
-    const ollamaData = await ollamaResponse.json();
-    const aiResponse = ollamaData.response;
+    const geminiData = await geminiResponse.json();
+    // Gemini's response structure: { candidates: [{ content: { parts: [{ text: '...' }] } }] }
+    let aiResponse = '';
+    try {
+      aiResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } catch (e) {
+      return NextResponse.json({ error: 'Failed to parse Gemini response.', geminiData }, { status: 500 });
+    }
     let extractedJson;
     try {
-      extractedJson = JSON.parse(aiResponse || '{}');
+      // Remove Markdown code block if present
+      let cleaned = aiResponse.trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```[a-zA-Z]*\n?/, '').replace(/```$/, '').trim();
+      }
+      extractedJson = JSON.parse(cleaned || '{}');
     } catch (e) {
-      return NextResponse.json({ error: 'Failed to parse Ollama response as JSON.', aiResponse }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to parse Gemini response as JSON.', aiResponse }, { status: 500 });
     }
 
     // 6. Save the JSON result to Supabase Storage
