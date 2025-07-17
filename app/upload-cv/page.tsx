@@ -595,74 +595,43 @@ export default function UploadCVPage() {
             <Card className="max-w-2xl mx-auto border-sky-100 shadow-xl">
               <CardHeader className="text-center">
                 <CardTitle className="text-xl md:text-2xl bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-                  {isAnalyzing ? "Menganalisis CV Anda..." : "Analisis Selesai!"}
+                  Analisis Selesai!
                 </CardTitle>
                 <CardDescription>
-                  {isAnalyzing
-                    ? "AI sedang membaca dan memahami CV Anda secara mendalam"
-                    : "CV Anda telah dianalisis. Lanjutkan ke tes MBTI untuk hasil yang lebih akurat"}
+                  CV Anda telah dianalisis. Lanjutkan ke tes MBTI untuk hasil yang lebih akurat
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Loading indicator when analyzing */}
-                {isAnalyzing && (
-                  <div className="flex flex-col items-center justify-center space-y-2 py-6">
-                    <div className="w-12 h-12 border-4 border-sky-300 border-t-emerald-500 rounded-full animate-spin"></div>
-                    <div className="text-sky-700 font-medium">Sedang menganalisis CV Anda...</div>
+                <div className="text-center space-y-6">
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-white" />
                   </div>
-                )}
-                {isAnalyzing ? (
-                  <div className="text-center space-y-4">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                      <Brain className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-base md:text-lg font-medium">Sedang menganalisis...</p>
-                      <div className="flex justify-center space-x-1">
-                        <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.1s" }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 bg-sky-500 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>✓ Membaca konten CV</p>
-                      <p>✓ Mengidentifikasi skill dan pengalaman</p>
-                      <p>✓ Menganalisis skill tersembunyi</p>
-                      <p className="text-sky-600">⏳ Menyiapkan rekomendasi...</p>
-                    </div>
+                  <div className="space-y-4">
+                    <Link href="/mbti-test">
+                      <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
+                        Lanjut ke Tes MBTI
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard">
+                      <Button
+                        variant="outline"
+                        className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
+                      >
+                        Lihat Dashboard
+                      </Button>
+                    </Link>
+                    <Button
+                      className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600"
+                      onClick={() => {
+                        window.location.href = "/mbti-test";
+                      }}
+                    >
+                      Lanjut ke Tahap Berikutnya
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
                   </div>
-                ) : (
-                  <div className="text-center space-y-6">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto">
-                      <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                    </div>
-
-                    {/* Removed analysisResult display */}
-
-                    <div className="space-y-4">
-                      <Link href="/mbti-test">
-                        <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                          Lanjut ke Tes MBTI
-                          <ArrowRight className="ml-2 w-4 h-4" />
-                        </Button>
-                      </Link>
-                      <Link href="/dashboard">
-                        <Button
-                          variant="outline"
-                          className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
-                        >
-                          Lihat Dashboard
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           )}
