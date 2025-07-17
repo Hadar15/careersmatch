@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import type React from "react"
 import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/lib/auth-context"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
