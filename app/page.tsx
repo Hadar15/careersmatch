@@ -1,5 +1,6 @@
-// Random comment: Testing commit and push to GitHub
+// Random comment: Another test push to GitHub
 "use client"
+export const dynamic = "force-dynamic";
 
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,7 +27,7 @@ import {
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/lib/auth-context"
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

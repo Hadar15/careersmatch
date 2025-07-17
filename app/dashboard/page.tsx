@@ -1,8 +1,9 @@
 "use client"
+export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/lib/auth-context"
 import { getUserProfile, mockJobListings, mockCourses, mockSkillGaps, type UserProfile } from "@/lib/mock-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,7 +18,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js" // Kept from '
 import { formatJobType } from "@/lib/utils" // Kept from 'main' branch
 
 export default function DashboardPage() {
-  const { user, signOut }: { user: SupabaseUser | null, signOut: () => Promise<void> } = useAuth()
+  const { user, signOut } = useAuth();
   const router = useRouter()
   const { toast } = useToast()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -56,18 +57,26 @@ export default function DashboardPage() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
-      router.push("/")
-      toast({
-        title: "Logout Berhasil",
-        description: "Anda telah keluar dari akun",
-      })
+      const { error } = await signOut();
+      if (!error) {
+        router.push("/");
+        toast({
+          title: "Logout Berhasil",
+          description: "Anda telah keluar dari akun",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Gagal logout",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
         description: "Gagal logout",
         variant: "destructive",
-      })
+      });
     }
   }
 

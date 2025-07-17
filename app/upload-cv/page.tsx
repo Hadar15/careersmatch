@@ -1,9 +1,10 @@
 "use client"
+export const dynamic = "force-dynamic";
 
 import type React from "react"
 import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/lib/auth-context"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,7 +25,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 // Remove PHOTON_API and add NOMINATIM_API
 const NOMINATIM_API = "https://nominatim.openstreetmap.org/search?format=json&q=";
 
-const MAP_STYLE_URL = "https://tiles.stadiamaps.com/styles/osm_bright.json";
+const MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json";
 
 export default function UploadCVPage() {
   const { user } = useAuth()
