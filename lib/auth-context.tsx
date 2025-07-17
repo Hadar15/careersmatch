@@ -113,7 +113,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
-    if (!error) setProfile(null)
+    // Always clear state, even if error
+    setUser(null)
+    setSession(null)
+    setProfile(null)
+    // Force reload to clear any stale state and ensure cookies are reset
+    if (typeof window !== 'undefined') {
+      window.location.href = "/";
+    }
     return { error }
   }
 

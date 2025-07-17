@@ -56,27 +56,11 @@ export default function DashboardPage() {
   }, [user]);
 
   const handleSignOut = async () => {
-    try {
-      const { error } = await signOut();
-      if (!error) {
-        router.push("/");
-        toast({
-          title: "Logout Berhasil",
-          description: "Anda telah keluar dari akun",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Gagal logout",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Gagal logout",
-        variant: "destructive",
-      });
+    console.log("Logout button clicked");
+    await signOut();
+    // Fallback: force reload in case signOut does not reload
+    if (typeof window !== 'undefined') {
+      window.location.href = "/";
     }
   }
 

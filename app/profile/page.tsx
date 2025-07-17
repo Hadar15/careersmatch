@@ -16,9 +16,11 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    const { error } = await signOut();
-    if (!error) {
-      router.push("/");
+    console.log("Logout button clicked");
+    await signOut();
+    // Fallback: force reload in case signOut does not reload
+    if (typeof window !== 'undefined') {
+      window.location.href = "/";
     }
   };
 
