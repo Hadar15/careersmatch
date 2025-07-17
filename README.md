@@ -27,29 +27,61 @@ A modern, AI-powered job matching platform built with Next.js, React, and TypeSc
 - **Frontend**: Next.js 15, React 18, TypeScript
 - **Styling**: Tailwind CSS, Shadcn/ui
 - **API**: Remotive API integration
-- **Authentication**: Custom auth system
+- **Authentication**: Supabase Auth
 - **Deployment**: Vercel-ready
 
-## 📦 Installation
+## ⚡ Quick Start for Developers
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Hadar15/careersmatch.git
-   cd careersmatch
-   ```
+### 1. Clone the repository
+```bash
+git clone https://github.com/Hadar15/careersmatch.git
+cd careersmatch
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### 2. Install dependencies
+```bash
+npm install
+```
 
-3. **Run the development server**
-   ```bash
-   npm run dev
-   ```
+### 3. Set up environment variables
+Create a `.env.local` file in the root directory with the following:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+- You can find these in your Supabase project dashboard under Project Settings > API.
+- **Do not share your anon key publicly.**
 
-4. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+### 4. Set up Supabase database
+- Run the SQL in `scripts/database-setup.sql` on your Supabase project to create the required tables.
+- Make sure your Supabase Auth settings allow `http://localhost:3000` as a redirect URL (for social login).
+
+### 5. Run the development server
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 🧩 Troubleshooting & Common Issues
+
+| Issue                        | Symptom                          | Solution/Prevention                |
+|------------------------------|----------------------------------|------------------------------------|
+| Missing .env.local           | Auth/data not working            | Create `.env.local` as above        |
+| Wrong Supabase schema        | Profile/CV/MBTI features break   | Run `scripts/database-setup.sql`    |
+| Supabase redirect not set    | Social login fails               | Add `http://localhost:3000` in Supabase Auth settings |
+| Cookies blocked              | Always logged out                | Allow cookies for `localhost`       |
+| Node/npm version mismatch    | App won’t start                  | Use Node.js 18+                    |
+| Dependency install fails     | App won’t start                  | Ensure build tools are installed    |
+| API rate limits/CORS         | Job data missing                 | Use fallback/mock data or check API |
+| Prod/dev differences         | Inconsistent auth/session        | Test both environments              |
+
+### Local Development Tips
+- **Restart your dev server** after changing environment variables or Supabase client code.
+- **Clear cookies** for `localhost:3000` if you have auth/session issues.
+- **Check browser settings**: Allow cookies and localStorage for `localhost`.
+- **Check for `sb-access-token` and `sb-refresh-token` cookies** after login. If missing, Supabase auth is not persisting.
+- **Check the browser console** for errors if something doesn’t work.
 
 ## 🌐 Live Demo
 
@@ -103,8 +135,7 @@ This project is optimized for Vercel deployment:
    - Preview deployments for pull requests
 
 3. **Environment Variables**
-   - No additional configuration needed
-   - API integration works out of the box
+   - Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel dashboard
 
 ### Manual Deployment
 ```bash
