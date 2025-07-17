@@ -1,6 +1,9 @@
 // Komentar random: update untuk tes deploy Vercel terbaru
 import { createClient } from "@supabase/supabase-js"
 
+console.log("SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log("SUPABASE ANON KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
 /**
  * Supabase client – make sure your environment contains:
  *  NEXT_PUBLIC_SUPABASE_URL
@@ -163,6 +166,3 @@ export type Database = {
     }
   }
 }
-
-console.log("ENV URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-console.log("ENV KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);

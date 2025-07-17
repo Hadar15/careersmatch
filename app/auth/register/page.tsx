@@ -86,6 +86,7 @@ export default function RegisterPage() {
 
   // Google OAuth register
   const handleGoogleRegister = async () => {
+    console.log("Attempting Google OAuth register");
     setLoading(true)
     setError("")
     try {

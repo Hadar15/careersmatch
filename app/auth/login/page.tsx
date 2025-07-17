@@ -60,6 +60,7 @@ export default function LoginPage() {
 
   // Google OAuth login
   const handleGoogleLogin = async () => {
+    console.log("Attempting Google OAuth login");
     setLoading(true)
     setError("")
     try {

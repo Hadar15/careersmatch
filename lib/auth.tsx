@@ -16,6 +16,8 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  console.log("AuthProvider function called");
+  "use client"
   console.log("AuthProvider mounted");
   const [user, setUser] = useState<any>(null)
   const [session, setSession] = useState<any>(null)
@@ -23,6 +25,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     console.log("AuthProvider useEffect running");
+    // --- Begin: Manual session restoration from OAuth URL hash ---
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash && hash.includes("access_token")) {
+        const params = new URLSearchParams(hash.substring(1));
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+        if (access_token && refresh_token) {
+          supabase.auth.setSession({ access_token, refresh_token });
+          // Remove the hash from the URL for cleanliness
+          window.history.replaceState(null, "", window.location.pathname);
+          console.log("Supabase session set from OAuth URL hash");
+        }
+      }
+    }
+    // --- End: Manual session restoration from OAuth URL hash ---
     const getSession = async () => {
       // Force refresh the session from localStorage/cookies
       await supabase.auth.refreshSession();
