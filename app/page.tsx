@@ -1,5 +1,6 @@
 // Random comment: Another test push to GitHub
 "use client"
+export const dynamic = "force-dynamic";
 
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
