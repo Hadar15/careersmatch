@@ -34,6 +34,12 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
 
+  console.log("user in HomePage", user);
+
+  // Debug log for user in Header
+  // This will log every render, just before returning the JSX
+  console.log("user in Header", user);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Removed redirect logic and unused variables

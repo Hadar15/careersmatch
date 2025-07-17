@@ -21,20 +21,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const getSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      setSession(data.session)
-      setUser(data.session?.user ?? null)
-      setLoading(false)
-    }
-    getSession()
+      const { data } = await supabase.auth.getSession();
+      console.log("Supabase getSession data", data);
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      setLoading(false);
+    };
+    getSession();
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-    })
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
     return () => {
-      listener.subscription.unsubscribe()
-    }
-  }, [])
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {

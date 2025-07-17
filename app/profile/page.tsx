@@ -17,8 +17,11 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     const { error } = await signOut();
+    console.log("Logout attempted, error:", error);
     if (!error) {
       router.push("/");
+    } else {
+      alert("Logout failed: " + error.message);
     }
   };
 
