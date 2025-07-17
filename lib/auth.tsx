@@ -1,6 +1,7 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from "react"
+import React from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase"
 
 type AuthContextType = {
@@ -15,12 +16,16 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  console.log("AuthProvider mounted");
   const [user, setUser] = useState<any>(null)
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
+    console.log("AuthProvider useEffect running");
     const getSession = async () => {
+      // Force refresh the session from localStorage/cookies
+      await supabase.auth.refreshSession();
       const { data } = await supabase.auth.getSession();
       console.log("Supabase getSession data", data);
       setSession(data.session);
