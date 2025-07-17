@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -16,8 +16,10 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await signOut();
-    router.push("/");
+    const { error } = await signOut();
+    if (!error) {
+      router.push("/");
+    }
   };
 
   return (
