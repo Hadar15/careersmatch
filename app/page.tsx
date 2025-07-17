@@ -1,5 +1,5 @@
-// Random comment: Another test push to GitHub
 "use client"
+// Random comment: Another test push to GitHub
 export const dynamic = "force-dynamic";
 
 import { Button } from "@/components/ui/button"
@@ -226,19 +226,15 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 mb-12 sm:mb-16">
-            {loading ? (
-              <div className="w-full sm:w-auto h-14 bg-gray-200 animate-pulse rounded-xl" />
-            ) : (
-              <Link href={user ? "/dashboard" : "/auth/register"} className="w-full sm:w-auto">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
-                >
-                  Mulai Perjalanan Karir
-                  <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6" />
-                </Button>
-              </Link>
-            )}
+            <Link href={user ? "/dashboard" : "/auth/register"} className="w-full sm:w-auto">
+              <Button
+                size="lg"
+                className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
+              >
+                Mulai Perjalanan Karir
+                <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6" />
+              </Button>
+            </Link>
             <Link href="#jobs" className="w-full sm:w-auto">
               <Button
                 size="lg"
