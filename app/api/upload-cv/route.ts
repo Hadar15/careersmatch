@@ -38,8 +38,7 @@ export async function POST(request: NextRequest) {
       console.error('DEBUG: Failed to parse Supabase access token from cookie', e);
     }
   }
-  console.log('DEBUG: accessToken (first 20 chars):', accessToken?.slice(0, 20));
-  console.log('DEBUG: All cookies:', cookieStore.getAll());
+  console.log('DEBUG: accessToken:', accessToken?.slice(0, 20));
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -91,6 +90,7 @@ export async function POST(request: NextRequest) {
       upsert: true,
       metadata: { owner: userId }, // Set owner for RLS policy
     });
+    console.log('DEBUG: Supabase upload error:', uploadError);
     if (uploadError) {
       return NextResponse.json({ error: 'Failed to upload CV to storage', details: uploadError.message }, { status: 500 });
     }
