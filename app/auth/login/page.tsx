@@ -43,7 +43,7 @@ export default function LoginPage() {
           title: "Login Berhasil",
           description: "Selamat datang kembali!",
         })
-        router.push("/")
+        window.location.href = "/"
       }
     } catch (err) {
       setError("Terjadi kesalahan yang tidak terduga")
@@ -75,7 +75,7 @@ export default function LoginPage() {
         // Tunggu session berubah, lalu redirect ke landing page
         supabase.auth.onAuthStateChange((_event, session) => {
           if (session) {
-            router.push("/")
+            window.location.href = "/"
           }
         })
       }

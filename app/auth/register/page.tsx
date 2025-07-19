@@ -75,7 +75,7 @@ export default function RegisterPage() {
           title: "Registrasi Berhasil",
           description: "Akun Anda telah dibuat. Selamat datang!",
         })
-        router.push("/dashboard")
+        window.location.href = "/dashboard"
       }
     } catch (err) {
       setError("Terjadi kesalahan yang tidak terduga")
@@ -101,7 +101,7 @@ export default function RegisterPage() {
         // Tunggu session berubah, lalu redirect ke dashboard
         supabase.auth.onAuthStateChange((_event, session) => {
           if (session) {
-            router.push("/")
+            window.location.href = "/"
           }
         })
       }

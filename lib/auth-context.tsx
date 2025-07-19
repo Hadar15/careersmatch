@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { supabase, type Database } from "./supabase"
 import type { User, Session, AuthError } from "@supabase/supabase-js"
+import { useRouter } from "next/navigation"
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"]
 
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = typeof window !== 'undefined' ? require('next/navigation').useRouter() : null;
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
@@ -55,42 +57,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
+    let polling = true;
+    let pollCount = 0;
+    const maxPolls = 10; // e.g., poll for up to 2 seconds (10 x 200ms)
+    const pollInterval = 200;
 
-      if (session?.user && session.user.confirmed_at) {
-        let userProfile = await fetchProfile(session.user.id)
-        if (!userProfile) {
-          userProfile = await createProfile(session.user)
+    async function pollSession() {
+      while (polling && pollCount < maxPolls) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user && session.user.confirmed_at) {
+          setSession(session);
+          setUser(session.user);
+          setLoading(false); // <-- Set loading false as soon as user is available
+          // Fetch profile in background
+          fetchProfile(session.user.id).then(userProfile => {
+            if (!userProfile) {
+              createProfile(session.user).then(createdProfile => {
+                setProfile(createdProfile);
+              });
+            } else {
+              setProfile(userProfile);
+            }
+          });
+          return;
         }
-        setProfile(userProfile)
-      } else {
-        setProfile(null)
+        pollCount++;
+        await new Promise(res => setTimeout(res, pollInterval));
       }
+      // Fallback: set loading false even if no session after polling
+      setLoading(false);
+    }
 
-      setLoading(false)
-    })
+    pollSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-
+      setLoading(false); // <-- Set loading false as soon as user is available
       if (session?.user && session.user.confirmed_at) {
-        let userProfile = await fetchProfile(session.user.id)
-        if (!userProfile) {
-          userProfile = await createProfile(session.user)
-        }
-        setProfile(userProfile)
+        // Fetch profile in background
+        fetchProfile(session.user.id).then(userProfile => {
+          if (!userProfile) {
+            createProfile(session.user).then(createdProfile => {
+              setProfile(createdProfile);
+            });
+          } else {
+            setProfile(userProfile);
+          }
+        });
       } else {
         setProfile(null)
       }
-
-      setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      polling = false;
+      subscription.unsubscribe();
+    }
   }, [])
+
+  useEffect(() => {
+    // Clean up ?code=... and ?access_token=... from URL after login callback
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      let changed = false;
+      ["code", "access_token", "refresh_token", "expires_in", "token_type", "type"].forEach(param => {
+        if (url.searchParams.has(param)) {
+          url.searchParams.delete(param);
+          changed = true;
+        }
+      });
+      if (changed) {
+        if (router && typeof router.replace === 'function') {
+          router.replace(url.pathname + url.search + url.hash);
+        } else {
+          window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+        }
+      }
+    }
+  }, [user, session]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const { data, error } = await supabase.auth.signUp({
