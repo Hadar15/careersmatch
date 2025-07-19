@@ -15,11 +15,40 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 // No supabase client at module level
 
 export async function POST(request: NextRequest) {
-  const cookieStore = cookies();
+  console.log('DEBUG: upload-cv API route called');
+  const cookieStore = await cookies();
+  // Robustly extract Supabase access token from multi-part cookies
+  const projectRef = cookieStore.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'))?.name?.split('-')[1];
+  const tokenParts = cookieStore.getAll()
+    .filter(c => c.name.startsWith(`sb-${projectRef}-auth-token.`))
+    .sort((a, b) => {
+      // Sort by the numeric suffix (.0, .1, ...)
+      const getNum = (c: any) => parseInt(c.name.split('.').pop() || '0', 10);
+      return getNum(a) - getNum(b);
+    })
+    .map(c => c.value)
+    .join('');
+  let accessToken = undefined;
+  if (tokenParts.startsWith('base64-')) {
+    try {
+      const json = JSON.parse(Buffer.from(tokenParts.slice(7), 'base64').toString());
+      accessToken = json.access_token;
+      console.log('DEBUG: FULL JWT accessToken:', accessToken);
+    } catch (e) {
+      console.error('DEBUG: Failed to parse Supabase access token from cookie', e);
+    }
+  }
+  console.log('DEBUG: accessToken (first 20 chars):', accessToken?.slice(0, 20));
+  console.log('DEBUG: All cookies:', cookieStore.getAll());
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: {
+        headers: {
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+      },
       cookies: {
         get: (key) => cookieStore.get(key)?.value,
         set: () => {},
@@ -53,9 +82,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Uploaded file is empty or could not be read.' }, { status: 400 });
     }
     const filePath = `resumes/${userId}/${fileName}`;
+    console.log('DEBUG: SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('DEBUG: Bucket name used:', 'resumes');
+    console.log('DEBUG: filePath:', filePath);
+    console.log('DEBUG: userId for metadata.owner:', userId);
     const { error: uploadError } = await supabase.storage.from('resumes').upload(filePath, arrayBuffer, {
       contentType: fileObj.type,
       upsert: true,
+      metadata: { owner: userId }, // Set owner for RLS policy
     });
     if (uploadError) {
       return NextResponse.json({ error: 'Failed to upload CV to storage', details: uploadError.message }, { status: 500 });
@@ -143,6 +177,7 @@ export async function POST(request: NextRequest) {
     // 7. Return success response
     return NextResponse.json({ success: true, filePath, jsonFilePath });
   } catch (err: any) {
+    console.error('DEBUG: Caught error in upload-cv API route', err);
     return NextResponse.json({ error: 'Unexpected server error', details: err.message }, { status: 500 });
   }
 } 

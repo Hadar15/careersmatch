@@ -27,6 +27,15 @@ const NOMINATIM_API = "https://nominatim.openstreetmap.org/search?format=json&q=
 
 const MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json";
 
+// Add a helper function at the top of the file
+function getErrorMessage(err: unknown): string {
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+    return (err as any).message;
+  }
+  return 'Terjadi kesalahan saat upload.';
+}
+
 export default function UploadCVPage() {
   const { user } = useAuth()
   const { toast } = useToast()
@@ -175,9 +184,10 @@ export default function UploadCVPage() {
       const formData = new FormData();
       formData.append('file', cvFile);
       formData.append('userId', user.id);
-      await new Promise((resolve, reject) => {
+      const responseText = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/upload-cv');
+        xhr.withCredentials = true;
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
             setUploadProgress(Math.round((event.loaded / event.total) * 100));
@@ -193,6 +203,16 @@ export default function UploadCVPage() {
         xhr.onerror = () => reject(new Error('Terjadi kesalahan saat upload.'));
         xhr.send(formData);
       });
+      // Parse backend response and show error if present
+      let json;
+      try {
+        json = JSON.parse(responseText as string);
+      } catch (e) {
+        throw new Error('Gagal memproses respons server.');
+      }
+      if (json.error) {
+        throw new Error(json.error + (json.details ? ': ' + json.details : ''));
+      }
       // Update or insert profile (as before)
       const { error: upsertError } = await supabase
         .from("profiles")
@@ -211,8 +231,8 @@ export default function UploadCVPage() {
       setAnalysisComplete(true);
       setUploadProgress(100);
       setStep(3);
-    } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan saat upload.");
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setIsAnalyzing(false);
       setTimeout(() => setUploadProgress(0), 1500); // Reset progress after short delay
