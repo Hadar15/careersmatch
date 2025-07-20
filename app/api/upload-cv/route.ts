@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     }
   }
   console.log('DEBUG: accessToken:', accessToken?.slice(0, 20));
+  console.log('DEBUG: Using accessToken:', !!accessToken, accessToken?.slice(0, 20));
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
