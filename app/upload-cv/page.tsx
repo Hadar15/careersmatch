@@ -180,39 +180,23 @@ export default function UploadCVPage() {
     setIsAnalyzing(true);
     setUploadProgress(0);
     try {
-      // Use XMLHttpRequest for progress
-      const formData = new FormData();
-      formData.append('file', cvFile);
-      formData.append('userId', user.id);
-      const responseText = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/upload-cv');
-        xhr.withCredentials = true;
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setUploadProgress(Math.round((event.loaded / event.total) * 100));
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(xhr.responseText);
-          } else {
-            reject(new Error(xhr.responseText || 'Terjadi kesalahan saat upload.'));
-          }
-        };
-        xhr.onerror = () => reject(new Error('Terjadi kesalahan saat upload.'));
-        xhr.send(formData);
-      });
-      // Parse backend response and show error if present
-      let json;
-      try {
-        json = JSON.parse(responseText as string);
-      } catch (e) {
-        throw new Error('Gagal memproses respons server.');
+      // The path: resumes/{userId}/{fileName}
+      const filePath = `resumes/${user.id}/${cvFile.name}`;
+
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, cvFile, {
+          contentType: cvFile.type,
+          upsert: true, // set to true if you want to overwrite existing files
+        });
+
+      if (error) {
+        setError("Gagal upload ke Supabase: " + error.message);
+      } else {
+        setSuccess("CV berhasil diupload ke Supabase!");
+        // Optionally, you can use data.Key or data.path for further processing
       }
-      if (json.error) {
-        throw new Error(json.error + (json.details ? ': ' + json.details : ''));
-      }
+
       // Update or insert profile (as before)
       const { error: upsertError } = await supabase
         .from("profiles")
@@ -227,7 +211,6 @@ export default function UploadCVPage() {
           updated_at: new Date().toISOString(),
         }, { onConflict: "id" });
       if (upsertError) throw upsertError;
-      setSuccess("CV dan profil berhasil diupload dan dianalisis!");
       setAnalysisComplete(true);
       setUploadProgress(100);
       setStep(3);

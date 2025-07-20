@@ -16,29 +16,10 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 
 export async function POST(request: NextRequest) {
   console.log('DEBUG: upload-cv API route called');
-  const cookieStore = await cookies();
-  // Robustly extract Supabase access token from multi-part cookies
-  const projectRef = cookieStore.getAll().find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'))?.name?.split('-')[1];
-  const tokenParts = cookieStore.getAll()
-    .filter(c => c.name.startsWith(`sb-${projectRef}-auth-token.`))
-    .sort((a, b) => {
-      // Sort by the numeric suffix (.0, .1, ...)
-      const getNum = (c: any) => parseInt(c.name.split('.').pop() || '0', 10);
-      return getNum(a) - getNum(b);
-    })
-    .map(c => c.value)
-    .join('');
-  let accessToken = undefined;
-  if (tokenParts.startsWith('base64-')) {
-    try {
-      const json = JSON.parse(Buffer.from(tokenParts.slice(7), 'base64').toString());
-      accessToken = json.access_token;
-      console.log('DEBUG: FULL JWT accessToken:', accessToken);
-    } catch (e) {
-      console.error('DEBUG: Failed to parse Supabase access token from cookie', e);
-    }
-  }
-  console.log('DEBUG: accessToken:', accessToken?.slice(0, 20));
+  // Get JWT from custom header
+  const accessToken = request.headers.get('x-access-token');
+  console.log('DEBUG: FULL JWT from header:', accessToken);
+  console.log('DEBUG: accessToken from header:', accessToken?.slice(0, 20));
   console.log('DEBUG: Using accessToken:', !!accessToken, accessToken?.slice(0, 20));
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,7 +31,7 @@ export async function POST(request: NextRequest) {
         },
       },
       cookies: {
-        get: (key) => cookieStore.get(key)?.value,
+        get: () => undefined,
         set: () => {},
         remove: () => {},
       },
@@ -81,11 +62,19 @@ export async function POST(request: NextRequest) {
     if (!arrayBuffer || (arrayBuffer.byteLength !== undefined && arrayBuffer.byteLength === 0)) {
       return NextResponse.json({ error: 'Uploaded file is empty or could not be read.' }, { status: 400 });
     }
-    const filePath = `resumes/${userId}/${fileName}`;
+    // Update filePath to include 'resumes' folder as required
+    const filePath = `resumes/resumes/${userId}/${fileName}`; // ← correct for your desired structure
     console.log('DEBUG: SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
     console.log('DEBUG: Bucket name used:', 'resumes');
     console.log('DEBUG: filePath:', filePath);
     console.log('DEBUG: userId for metadata.owner:', userId);
+    // Log the Authorization header
+    console.log('DEBUG: Supabase upload headers:', {
+      Authorization: accessToken ? `Bearer ${accessToken.slice(0, 20)}...` : undefined,
+    });
+    console.log('DEBUG: userId from form:', userId);
+    console.log('DEBUG: filePath:', filePath);
+    console.log('DEBUG: Authorization header:', accessToken ? `Bearer ${accessToken.slice(0, 20)}...` : undefined);
     const { error: uploadError } = await supabase.storage.from('resumes').upload(filePath, arrayBuffer, {
       contentType: fileObj.type,
       upsert: true,
