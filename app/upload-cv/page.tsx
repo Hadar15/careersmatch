@@ -180,45 +180,35 @@ export default function UploadCVPage() {
     setIsAnalyzing(true);
     setUploadProgress(0);
     try {
-      // The path: resumes/{userId}/{fileName}
-      const filePath = `resumes/${user.id}/${cvFile.name}`;
+      // Get Supabase access token
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
 
-      const { data, error } = await supabase.storage
-        .from('resumes')
-        .upload(filePath, cvFile, {
-          contentType: cvFile.type,
-          upsert: true, // set to true if you want to overwrite existing files
-        });
+      const formData = new FormData();
+      formData.append("file", cvFile);
+      formData.append("userId", user.id);
 
-      if (error) {
-        setError("Gagal upload ke Supabase: " + error.message);
-      } else {
-        setSuccess("CV berhasil diupload ke Supabase!");
-        // Optionally, you can use data.Key or data.path for further processing
+      const response = await fetch("/api/upload-cv", {
+        method: "POST",
+        headers: {
+          "x-access-token": accessToken || "",
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.error || "Gagal upload/analisis CV");
+        return;
       }
-
-      // Update or insert profile (as before)
-      const { error: upsertError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          email: personalInfo.email,
-          full_name: personalInfo.name,
-          phone: personalInfo.phone,
-          location: JSON.stringify(personalInfo.location),
-          professional_summary: personalInfo.summary,
-          experience_years: parseInt(personalInfo.experience_years, 10),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
-      if (upsertError) throw upsertError;
+      setSuccess("CV berhasil diupload dan dianalisis!");
       setAnalysisComplete(true);
-      setUploadProgress(100);
       setStep(3);
-    } catch (err) {
-      setError(getErrorMessage(err));
+    } catch (err: any) {
+      setError("Terjadi kesalahan: " + (err.message || err.toString()));
     } finally {
       setIsAnalyzing(false);
-      setTimeout(() => setUploadProgress(0), 1500); // Reset progress after short delay
+      setTimeout(() => setUploadProgress(0), 1500);
     }
   };
 
@@ -276,69 +266,6 @@ export default function UploadCVPage() {
         description: "Terjadi kesalahan saat menyimpan data",
         variant: "destructive",
       })
-    }
-  }
-
-  const handleCVAnalysis = async () => {
-    if (!cvFile || !user) return
-
-    setIsAnalyzing(true)
-
-    try {
-      // Simulate file upload and analysis for demo
-      const mockAnalysis = await simulateAIAnalysis(cvFile.name)
-
-      // Save analysis result to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem("cvAnalysis", JSON.stringify(mockAnalysis))
-
-        // Update profile completion
-        const profile = JSON.parse(localStorage.getItem("userProfile") || "{}")
-        profile.profile_completion = 70
-        localStorage.setItem("userProfile", JSON.stringify(profile))
-      }
-
-      setAnalysisComplete(true)
-      setStep(3)
-
-      toast({
-        title: "Analisis Selesai",
-        description: "CV Anda telah berhasil dianalisis",
-      })
-    } catch (error) {
-      console.error("Error analyzing CV:", error)
-      toast({
-        title: "Error",
-        description: "Gagal menganalisis CV",
-        variant: "destructive",
-      })
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }
-
-  const simulateAIAnalysis = async (fileName: string) => {
-    // Simulate AI analysis delay
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-
-    // Mock analysis result based on filename or random generation
-    return {
-      skills: ["JavaScript", "React", "Node.js", "Python", "SQL", "Git"],
-      hiddenSkills: ["Leadership", "Project Management", "Problem Solving"],
-      experience: {
-        totalYears: 3,
-        roles: [
-          { title: "Frontend Developer", company: "Tech Corp", duration: "2 years" },
-          { title: "Junior Developer", company: "StartupXYZ", duration: "1 year" },
-        ],
-      },
-      industries: ["Technology", "Software Development"],
-      level: "Mid-Level",
-      recommendations: [
-        "Consider learning TypeScript for better code quality",
-        "Explore cloud technologies like AWS or Azure",
-        "Develop leadership skills for senior roles",
-      ],
     }
   }
 
