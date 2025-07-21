@@ -180,47 +180,28 @@ export default function UploadCVPage() {
     setIsAnalyzing(true);
     setUploadProgress(0);
     try {
-      // Get JWT from Supabase
-      const { data: { session } } = await supabase.auth.getSession();
-      const jwt = session?.access_token;
-      if (!session) {
-        setError("User session not found. Please log in again.");
-        return;
+      // The path: resumes/{userId}/{fileName}
+      const filePath = `resumes/${user.id}/${cvFile.name}`;
+      console.log('DEBUG: Uploading to path:', filePath);
+      console.log('DEBUG: cvFile:', cvFile, 'type:', cvFile.type, 'size:', cvFile.size);
+
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, cvFile, {
+          contentType: cvFile.type,
+          upsert: true, // set to true if you want to overwrite existing files
+        });
+
+      console.log('DEBUG: Supabase upload result:', { data, error });
+
+      if (error) {
+        console.log('DEBUG: Supabase error message:', error.message);
+        setError("Gagal upload ke Supabase: " + error.message);
+      } else {
+        setSuccess("CV berhasil diupload ke Supabase!");
+        // Optionally, you can use data.Key or data.path for further processing
       }
-      // Use XMLHttpRequest for progress
-      const formData = new FormData();
-      formData.append('file', cvFile);
-      formData.append('userId', user.id);
-      const responseText = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/upload-cv');
-        xhr.withCredentials = true;
-        xhr.setRequestHeader('x-access-token', jwt || '');
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setUploadProgress(Math.round((event.loaded / event.total) * 100));
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(xhr.responseText);
-          } else {
-            reject(new Error(xhr.responseText || 'Terjadi kesalahan saat upload.'));
-          }
-        };
-        xhr.onerror = () => reject(new Error('Terjadi kesalahan saat upload.'));
-        xhr.send(formData);
-      });
-      // Parse backend response and show error if present
-      let json;
-      try {
-        json = JSON.parse(responseText as string);
-      } catch (e) {
-        throw new Error('Gagal memproses respons server.');
-      }
-      if (json.error) {
-        throw new Error(json.error + (json.details ? ': ' + json.details : ''));
-      }
+
       // Update or insert profile (as before)
       const { error: upsertError } = await supabase
         .from("profiles")
@@ -235,7 +216,6 @@ export default function UploadCVPage() {
           updated_at: new Date().toISOString(),
         }, { onConflict: "id" });
       if (upsertError) throw upsertError;
-      setSuccess("CV dan profil berhasil diupload dan dianalisis!");
       setAnalysisComplete(true);
       setUploadProgress(100);
       setStep(3);
