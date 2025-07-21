@@ -182,6 +182,8 @@ export default function UploadCVPage() {
     try {
       // The path: resumes/{userId}/{fileName}
       const filePath = `resumes/${user.id}/${cvFile.name}`;
+      console.log('DEBUG: Uploading to path:', filePath);
+      console.log('DEBUG: cvFile:', cvFile, 'type:', cvFile.type, 'size:', cvFile.size);
 
       const { data, error } = await supabase.storage
         .from('resumes')
@@ -190,7 +192,10 @@ export default function UploadCVPage() {
           upsert: true, // set to true if you want to overwrite existing files
         });
 
+      console.log('DEBUG: Supabase upload result:', { data, error });
+
       if (error) {
+        console.log('DEBUG: Supabase error message:', error.message);
         setError("Gagal upload ke Supabase: " + error.message);
       } else {
         setSuccess("CV berhasil diupload ke Supabase!");
