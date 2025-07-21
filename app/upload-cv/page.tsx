@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import type React from "react"
 import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,6 +26,12 @@ import "maplibre-gl/dist/maplibre-gl.css";
 const NOMINATIM_API = "https://nominatim.openstreetmap.org/search?format=json&q=";
 
 const MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json";
+
+const STEPS = [
+  "Input/Tes MBTI",
+  "Upload CV",
+  "Hasil Analisis AI"
+];
 
 export default function UploadCVPage() {
   const { user } = useAuth()
@@ -207,10 +213,14 @@ export default function UploadCVPage() {
           updated_at: new Date().toISOString(),
         }, { onConflict: "id" });
       if (upsertError) throw upsertError;
-      setSuccess("CV dan profil berhasil diupload dan dianalisis!");
-      setAnalysisComplete(true);
-      setUploadProgress(100);
-      setStep(3);
+      setSuccess("CV berhasil diupload dan dianalisis!");
+      toast({
+        title: "Upload Berhasil",
+        description: "CV Anda berhasil diupload dan dianalisis.",
+      });
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1200);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat upload.");
     } finally {
@@ -339,46 +349,36 @@ export default function UploadCVPage() {
     }
   }
 
-  const progressValue = (step / 3) * 100
+  // Progress bar logic
+  const progress = 66;
+  const activeStep = 1;
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-        {/* Header */}
-        <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Brain className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-                CareerMatch AI
-              </span>
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="outline" className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent">
-                <ArrowLeft className="mr-2 w-4 h-4" />
-                Kembali
-              </Button>
-            </Link>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
+        <div className="w-full max-w-3xl mb-10">
+          {/* Stepper label */}
+          <div className="flex justify-between items-center mb-2 px-2">
+            {STEPS.map((label, idx) => (
+              <div key={label} className={`flex-1 text-center text-xs md:text-base font-semibold ${activeStep === idx ? 'text-sky-700' : 'text-gray-400'}`}>{label}</div>
+            ))}
           </div>
-        </header>
-
+          {/* Progress percentage */}
+          <div className="flex justify-between items-center mb-1 px-2">
+            <span className="text-xs text-gray-400 font-semibold">{progress}%</span>
+          </div>
+          {/* Custom Progress Bar */}
+          <div className="relative h-4 flex items-center">
+            {/* Background bar */}
+            <div className="absolute left-0 right-0 h-3 rounded-full bg-sky-100" />
+            {/* Gradient progress */}
+            <div
+              className="h-3 rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-500"
+              style={{ width: `${progress}%`, zIndex: 1 }}
+            />
+          </div>
+        </div>
         <div className="container mx-auto px-4 py-8 md:py-12">
-          {/* Progress Bar */}
-          <div className="max-w-2xl mx-auto mb-6 md:mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-sky-600">Progress</span>
-              <span className="text-sm font-medium text-sky-600">{Math.round(progressValue)}%</span>
-            </div>
-            <Progress value={progressValue} className="h-2" />
-            <div className="flex justify-between mt-2 text-xs text-gray-500">
-              <span>Info Personal</span>
-              <span>Upload CV</span>
-              <span>Analisis AI</span>
-            </div>
-          </div>
-
           {/* Step 1: Personal Information */}
           {step === 1 && (
             <Card className="max-w-2xl mx-auto border-sky-100 shadow-xl">
@@ -397,7 +397,7 @@ export default function UploadCVPage() {
                       name="name"
                       value={personalInfo.name}
                       onChange={handleChange}
-                      placeholder="John Doe"
+                      placeholder="Budi"
                     />
                   </div>
                   <div className="space-y-2">
@@ -406,10 +406,9 @@ export default function UploadCVPage() {
                       id="email"
                       name="email"
                       type="email"
-                      value={personalInfo.email}
-                      onChange={handleChange}
-                      placeholder="john@example.com"
+                      value={user?.email || ""}
                       disabled
+                      placeholder="user@email.com"
                     />
                   </div>
                 </div>
@@ -498,6 +497,13 @@ export default function UploadCVPage() {
                 >
                   Lanjutkan ke Upload CV
                   <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full mt-2 border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent rounded-xl font-semibold"
+                  onClick={() => window.location.href = "/ai-analysis"}
+                >
+                  Kembali ke MBTI
                 </Button>
               </CardContent>
             </Card>
