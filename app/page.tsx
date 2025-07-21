@@ -26,13 +26,28 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!searchParams) return;
+    const code = searchParams.get("code");
+    if (code) {
+      // Exchange the code for a session (for Supabase v2+)
+      import("@/lib/supabase").then(({ supabase }) => {
+        supabase.auth.exchangeCodeForSession(code).then(() => {
+          // Remove the code param from the URL
+          router.replace("/", { scroll: false });
+        });
+      });
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -80,18 +95,11 @@ export default function HomePage() {
           {/* Desktop Buttons */}
           <div className="hidden lg:flex items-center space-x-3">
             {user ? (
-              <>
-                <Link href="/dashboard">
-                  <Button className="bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
-                    Dashboard
-                  </Button>
-                </Link>
-                <Link href="/profile">
-                  <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
-                    Profil saya
-                  </Button>
-                </Link>
-              </>
+              <Link href="/profile">
+                <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
+                  Profil saya
+                </Button>
+              </Link>
             ) : (
               <>
                 <Link href="/auth/login">
@@ -159,24 +167,14 @@ export default function HomePage() {
                 </Link>
                 <div className="flex items-center space-x-4 pt-4">
                   {user ? (
-                    <>
-                      <Link href="/dashboard" className="flex-1">
-                        <Button
-                          className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          Dashboard
-                        </Button>
-                      </Link>
-                      <Link href="/profile" className="flex-1">
-                        <Button
-                          className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          Profil saya
-                        </Button>
-                      </Link>
-                    </>
+                    <Link href="/profile" className="flex-1">
+                      <Button
+                        className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Profil saya
+                      </Button>
+                    </Link>
                   ) : (
                     <>
                       <Link href="/auth/login" className="flex-1">
