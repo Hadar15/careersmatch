@@ -63,9 +63,15 @@ export async function POST(request: NextRequest) {
 
     // 4. Extract text from the CV
     let extractedText = '';
+    // Node 20+ supports Buffer.from(arrayBuffer), but for Node 24+ and edge runtimes, add a fallback
+    function arrayBufferToBuffer(ab) {
+      if (typeof Buffer !== 'undefined') return Buffer.from(ab);
+      // Fallback for environments without Buffer
+      return new Uint8Array(ab);
+    }
     if (fileExt === 'pdf') {
       try {
-        const buffer = Buffer.from(arrayBuffer);
+        const buffer = arrayBufferToBuffer(arrayBuffer);
         extractedText = await extractTextFromPDF(buffer);
         console.log('Extracted text length:', extractedText.length);
       } catch (err: any) {
@@ -74,7 +80,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (fileExt === 'docx') {
       try {
-        const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
+        const result = await mammoth.extractRawText({ buffer: arrayBufferToBuffer(arrayBuffer) });
         extractedText = result.value;
         console.log('Extracted DOCX text length:', extractedText.length);
       } catch (err: any) {
