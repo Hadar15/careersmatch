@@ -19,15 +19,16 @@ export async function POST(request: NextRequest) {
   // Get JWT from custom header
   const accessToken = request.headers.get('x-access-token');
   console.log('DEBUG: FULL JWT from header:', accessToken);
-  console.log('DEBUG: accessToken from header:', accessToken?.slice(0, 20));
-  console.log('DEBUG: Using accessToken:', !!accessToken, accessToken?.slice(0, 20));
+  if (!accessToken) {
+    return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
+  }
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       global: {
         headers: {
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          Authorization: `Bearer ${accessToken}`,
         },
       },
       cookies: {
@@ -62,20 +63,18 @@ export async function POST(request: NextRequest) {
     if (!arrayBuffer || (arrayBuffer.byteLength !== undefined && arrayBuffer.byteLength === 0)) {
       return NextResponse.json({ error: 'Uploaded file is empty or could not be read.' }, { status: 400 });
     }
-    // Update filePath to include 'resumes' folder as required
-    const filePath = `resumes/resumes/${userId}/${fileName}`; // ← correct for your desired structure
+    // Use the path: resumes/resumes/{userId}/{fileName}
+    const filePath = `resumes/${userId}/${fileName}`;
+    const fullPath = `resumes/${filePath}`;
     console.log('DEBUG: SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
     console.log('DEBUG: Bucket name used:', 'resumes');
-    console.log('DEBUG: filePath:', filePath);
+    console.log('DEBUG: filePath:', fullPath);
     console.log('DEBUG: userId for metadata.owner:', userId);
     // Log the Authorization header
     console.log('DEBUG: Supabase upload headers:', {
       Authorization: accessToken ? `Bearer ${accessToken.slice(0, 20)}...` : undefined,
     });
-    console.log('DEBUG: userId from form:', userId);
-    console.log('DEBUG: filePath:', filePath);
-    console.log('DEBUG: Authorization header:', accessToken ? `Bearer ${accessToken.slice(0, 20)}...` : undefined);
-    const { error: uploadError } = await supabase.storage.from('resumes').upload(filePath, arrayBuffer, {
+    const { error: uploadError } = await supabase.storage.from('resumes').upload(fullPath, arrayBuffer, {
       contentType: fileObj.type,
       upsert: true,
       metadata: { owner: userId }, // Set owner for RLS policy
