@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { AuthGuard } from "@/components/auth-guard"
 import { useAuth } from "@/lib/auth-context"
 import { supabase } from "@/lib/supabase"
@@ -57,6 +57,92 @@ export default function UploadCVPage() {
   const [mapError, setMapError] = useState("");
   // Add state for upload progress
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isSubmittingPersonalInfo, setIsSubmittingPersonalInfo] = useState(false);
+
+  // Debounced version of handlePersonalInfoSubmit to prevent multiple rapid clicks
+  const debouncedPersonalInfoSubmit = useCallback(async () => {
+    // Prevent multiple submissions
+    if (isSubmittingPersonalInfo) return;
+    
+    setIsSubmittingPersonalInfo(true);
+    
+    try {
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "Anda harus login untuk menyimpan data.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Add timeout protection for Supabase operations
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Operation timed out')), 10000)
+      );
+      
+      // Upsert profile to Supabase as soon as personal info is submitted
+      const upsertPromise = supabase
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          email: personalInfo.email,
+          full_name: personalInfo.name,
+          phone: personalInfo.phone,
+          location: JSON.stringify(personalInfo.location),
+          professional_summary: personalInfo.summary,
+          experience_years: parseInt(personalInfo.experience_years, 10),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+        
+      const result = await Promise.race([upsertPromise, timeoutPromise]);
+      const { error: upsertError } = result as any;
+        
+      if (upsertError) {
+        console.error("Supabase upsert error:", upsertError);
+        toast({
+          title: "Error",
+          description: `Gagal menyimpan data ke server: ${upsertError.message || 'Unknown error'}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Save to localStorage for demo
+      const profile = {
+        full_name: personalInfo.name,
+        phone: personalInfo.phone,
+        location: personalInfo.location,
+        professional_summary: personalInfo.summary,
+        experience_years: Number.parseInt(personalInfo.experience_years) || null,
+        profile_completion: 40,
+        updated_at: new Date().toISOString(),
+      }
+      
+      try {
+        localStorage.setItem("userProfile", JSON.stringify(profile))
+      } catch (localStorageError) {
+        console.warn("Failed to save to localStorage:", localStorageError);
+        // Continue without localStorage - not critical
+      }
+      
+      setStep(2)
+      toast({
+        title: "Berhasil",
+        description: "Informasi personal tersimpan",
+      })
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast({
+        title: "Error",
+        description: `Terjadi kesalahan saat menyimpan data: ${errorMessage}`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmittingPersonalInfo(false);
+    }
+  }, [user, personalInfo, toast, supabase, isSubmittingPersonalInfo]);
 
   // Initialize MapLibre map
   useEffect(() => {
@@ -227,60 +313,7 @@ export default function UploadCVPage() {
   };
 
   const handlePersonalInfoSubmit = async () => {
-    try {
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "Anda harus login untuk menyimpan data.",
-          variant: "destructive",
-        });
-        return;
-      }
-      // Upsert profile to Supabase as soon as personal info is submitted
-      const { error: upsertError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          email: personalInfo.email,
-          full_name: personalInfo.name,
-          phone: personalInfo.phone,
-          location: JSON.stringify(personalInfo.location),
-          professional_summary: personalInfo.summary,
-          experience_years: parseInt(personalInfo.experience_years, 10),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
-      if (upsertError) {
-        toast({
-          title: "Error",
-          description: "Gagal menyimpan data ke server.",
-          variant: "destructive",
-        });
-        return;
-      }
-      // Save to localStorage for demo
-      const profile = {
-        full_name: personalInfo.name,
-        phone: personalInfo.phone,
-        location: personalInfo.location,
-        professional_summary: personalInfo.summary,
-        experience_years: Number.parseInt(personalInfo.experience_years) || null,
-        profile_completion: 40,
-        updated_at: new Date().toISOString(),
-      }
-      localStorage.setItem("userProfile", JSON.stringify(profile))
-      setStep(2)
-      toast({
-        title: "Berhasil",
-        description: "Informasi personal tersimpan",
-      })
-    } catch (error) {
-      console.error("Error updating profile:", error)
-      toast({
-        title: "Error",
-        description: "Terjadi kesalahan saat menyimpan data",
-        variant: "destructive",
-      })
-    }
+    debouncedPersonalInfoSubmit();
   }
 
   const handleCVAnalysis = async () => {
@@ -501,10 +534,21 @@ export default function UploadCVPage() {
                 <Button
                   onClick={handlePersonalInfoSubmit}
                   className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600"
-                  disabled={!personalInfo.name || !personalInfo.email}
+                  disabled={!personalInfo.name || !personalInfo.email || isSubmittingPersonalInfo}
                 >
-                  Lanjutkan ke Upload CV
-                  <ArrowRight className="ml-2 w-4 h-4" />
+                  {isSubmittingPersonalInfo ? (
+                    <>
+                      <span className="mr-2 inline-block align-middle">
+                        <span className="w-4 h-4 border-2 border-white border-t-emerald-500 rounded-full animate-spin inline-block"></span>
+                      </span>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      Lanjutkan ke Upload CV
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
