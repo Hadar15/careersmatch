@@ -31,6 +31,7 @@ import { useAuth } from "@/lib/auth-context"
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isExchangingCode, setIsExchangingCode] = useState(false)
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
@@ -39,11 +40,17 @@ export default function HomePage() {
     if (!searchParams) return;
     const code = searchParams.get("code");
     if (code) {
+      setIsExchangingCode(true);
       // Exchange the code for a session (for Supabase v2+)
       import("@/lib/supabase").then(({ supabase }) => {
         supabase.auth.exchangeCodeForSession(code).then(() => {
           // Remove the code param from the URL
           router.replace("/", { scroll: false });
+          setIsExchangingCode(false);
+        }).catch((error) => {
+          console.error("Error exchanging code for session:", error);
+          router.replace("/", { scroll: false });
+          setIsExchangingCode(false);
         });
       });
     }
@@ -244,16 +251,16 @@ export default function HomePage() {
             <Link
               href={user ? "/dashboard" : "/auth/register"}
               className="w-full sm:w-auto"
-              aria-disabled={loading}
-              tabIndex={loading ? -1 : 0}
-              style={loading ? { pointerEvents: "none", opacity: 0.6 } : {}}
+              aria-disabled={loading || isExchangingCode}
+              tabIndex={loading || isExchangingCode ? -1 : 0}
+              style={loading || isExchangingCode ? { pointerEvents: "none", opacity: 0.6 } : {}}
             >
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
-                disabled={loading}
+                disabled={loading || isExchangingCode}
               >
-                {loading ? "Memuat..." : "Mulai Perjalanan Karir"}
+                {loading || isExchangingCode ? "Memuat..." : "Mulai Perjalanan Karir"}
                 <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6" />
               </Button>
             </Link>
