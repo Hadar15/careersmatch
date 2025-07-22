@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import mammoth from 'mammoth';
 
 // Helper function to extract text from PDF using pdf-parse
@@ -10,13 +11,22 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   return data.text;
 }
 
-// Initialize Supabase client with service role key (server-side only)
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Initialize Supabase client for server-side (API route)
+// No supabase client at module level
 
 export async function POST(request: NextRequest) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (key) => cookieStore.get(key)?.value,
+        set: () => {},
+        remove: () => {},
+      },
+    }
+  );
   try {
     // 1. Parse multipart form data
     const formData = await request.formData();

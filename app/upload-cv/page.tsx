@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import type React from "react"
 import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/lib/auth-context"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,13 +25,10 @@ import "maplibre-gl/dist/maplibre-gl.css";
 // Remove PHOTON_API and add NOMINATIM_API
 const NOMINATIM_API = "https://nominatim.openstreetmap.org/search?format=json&q=";
 
-const MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json";
-
-const STEPS = [
-  "Input/Tes MBTI",
-  "Upload CV",
-  "Hasil Analisis AI"
-];
+// Ganti style URL agar peta sangat detail (MapTiler Streets)
+// PENTING: Ganti 'YOUR_MAPTILER_KEY' dengan API key MapTiler milikmu dari https://cloud.maptiler.com/
+const MAPTILER_KEY = "bgP0e1YaRFwIQydEByEe"; // <-- Diisi dengan API Key yang diberikan.
+const MAP_STYLE_URL = `https://api.maptiler.com/maps/streets/style.json?key=${MAPTILER_KEY}`;
 
 export default function UploadCVPage() {
   const { user } = useAuth()
@@ -71,16 +68,17 @@ export default function UploadCVPage() {
             console.log("[MapLibre] Initializing map...");
             mapRef.current = new maplibregl.Map({
               container: mapContainer.current,
-              style: MAP_STYLE_URL, // Use Stadia Maps OSM Bright style
+              style: MAP_STYLE_URL, // MapTiler Streets
               center: [106.816666, -6.200000], // Jakarta
               zoom: 5,
             });
             mapRef.current.on("load", () => {
               setMapReady(true);
+              setMapError("");
               console.log("[MapLibre] Map loaded successfully.");
             });
             mapRef.current.on("error", (e: any) => {
-              setMapError("Gagal memuat peta. Coba refresh halaman atau periksa koneksi internet Anda.");
+              setMapError("Gagal memuat peta. Pastikan API key MapTiler benar dan koneksi internet lancar. Daftar gratis di https://cloud.maptiler.com/");
               console.error("MapLibre GL JS error:", e);
             });
             mapRef.current.on("click", (e: any) => {
@@ -98,7 +96,7 @@ export default function UploadCVPage() {
               }));
             });
           } catch (err) {
-            setMapError("Gagal memuat peta. Coba refresh halaman atau periksa koneksi internet Anda.");
+            setMapError("Gagal memuat peta. Cek API key MapTiler dan koneksi internet Anda.");
             console.error("Map initialization error:", err);
           }
         }
@@ -180,6 +178,8 @@ export default function UploadCVPage() {
       // Use XMLHttpRequest for progress
       const formData = new FormData();
       formData.append('file', cvFile);
+      // Tambahkan log untuk memastikan userId benar
+      console.log('user.id yang dikirim ke backend:', user.id);
       formData.append('userId', user.id);
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -213,14 +213,10 @@ export default function UploadCVPage() {
           updated_at: new Date().toISOString(),
         }, { onConflict: "id" });
       if (upsertError) throw upsertError;
-      setSuccess("CV berhasil diupload dan dianalisis!");
-      toast({
-        title: "Upload Berhasil",
-        description: "CV Anda berhasil diupload dan dianalisis.",
-      });
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1200);
+      setSuccess("CV dan profil berhasil diupload dan dianalisis!");
+      setAnalysisComplete(true);
+      setUploadProgress(100);
+      setStep(3);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat upload.");
     } finally {
@@ -349,36 +345,46 @@ export default function UploadCVPage() {
     }
   }
 
-  // Progress bar logic
-  const progress = 66;
-  const activeStep = 1;
+  const progressValue = (step / 3) * 100
 
   return (
     <AuthGuard>
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-        <div className="w-full max-w-3xl mb-10">
-          {/* Stepper label */}
-          <div className="flex justify-between items-center mb-2 px-2">
-            {STEPS.map((label, idx) => (
-              <div key={label} className={`flex-1 text-center text-xs md:text-base font-semibold ${activeStep === idx ? 'text-sky-700' : 'text-gray-400'}`}>{label}</div>
-            ))}
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
+        {/* Header */}
+        <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                <Brain className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+                CareerMatch AI
+              </span>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="outline" className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent">
+                <ArrowLeft className="mr-2 w-4 h-4" />
+                Kembali
+              </Button>
+            </Link>
           </div>
-          {/* Progress percentage */}
-          <div className="flex justify-between items-center mb-1 px-2">
-            <span className="text-xs text-gray-400 font-semibold">{progress}%</span>
-          </div>
-          {/* Custom Progress Bar */}
-          <div className="relative h-4 flex items-center">
-            {/* Background bar */}
-            <div className="absolute left-0 right-0 h-3 rounded-full bg-sky-100" />
-            {/* Gradient progress */}
-            <div
-              className="h-3 rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-500"
-              style={{ width: `${progress}%`, zIndex: 1 }}
-            />
-          </div>
-        </div>
+        </header>
+
         <div className="container mx-auto px-4 py-8 md:py-12">
+          {/* Progress Bar */}
+          <div className="max-w-2xl mx-auto mb-6 md:mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-sky-600">Progress</span>
+              <span className="text-sm font-medium text-sky-600">{Math.round(progressValue)}%</span>
+            </div>
+            <Progress value={progressValue} className="h-2" />
+            <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <span>Info Personal</span>
+              <span>Upload CV</span>
+              <span>Analisis AI</span>
+            </div>
+          </div>
+
           {/* Step 1: Personal Information */}
           {step === 1 && (
             <Card className="max-w-2xl mx-auto border-sky-100 shadow-xl">
@@ -397,7 +403,7 @@ export default function UploadCVPage() {
                       name="name"
                       value={personalInfo.name}
                       onChange={handleChange}
-                      placeholder="Budi"
+                      placeholder="John Doe"
                     />
                   </div>
                   <div className="space-y-2">
@@ -406,9 +412,10 @@ export default function UploadCVPage() {
                       id="email"
                       name="email"
                       type="email"
-                      value={user?.email || ""}
+                      value={personalInfo.email}
+                      onChange={handleChange}
+                      placeholder="john@example.com"
                       disabled
-                      placeholder="user@email.com"
                     />
                   </div>
                 </div>
@@ -497,13 +504,6 @@ export default function UploadCVPage() {
                 >
                   Lanjutkan ke Upload CV
                   <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full mt-2 border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent rounded-xl font-semibold"
-                  onClick={() => window.location.href = "/ai-analysis"}
-                >
-                  Kembali ke MBTI
                 </Button>
               </CardContent>
             </Card>
@@ -601,74 +601,43 @@ export default function UploadCVPage() {
             <Card className="max-w-2xl mx-auto border-sky-100 shadow-xl">
               <CardHeader className="text-center">
                 <CardTitle className="text-xl md:text-2xl bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-                  {isAnalyzing ? "Menganalisis CV Anda..." : "Analisis Selesai!"}
+                  Analisis Selesai!
                 </CardTitle>
                 <CardDescription>
-                  {isAnalyzing
-                    ? "AI sedang membaca dan memahami CV Anda secara mendalam"
-                    : "CV Anda telah dianalisis. Lanjutkan ke tes MBTI untuk hasil yang lebih akurat"}
+                  CV Anda telah dianalisis. Lanjutkan ke tes MBTI untuk hasil yang lebih akurat
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Loading indicator when analyzing */}
-                {isAnalyzing && (
-                  <div className="flex flex-col items-center justify-center space-y-2 py-6">
-                    <div className="w-12 h-12 border-4 border-sky-300 border-t-emerald-500 rounded-full animate-spin"></div>
-                    <div className="text-sky-700 font-medium">Sedang menganalisis CV Anda...</div>
+                <div className="text-center space-y-6">
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-white" />
                   </div>
-                )}
-                {isAnalyzing ? (
-                  <div className="text-center space-y-4">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                      <Brain className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-base md:text-lg font-medium">Sedang menganalisis...</p>
-                      <div className="flex justify-center space-x-1">
-                        <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.1s" }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 bg-sky-500 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>✓ Membaca konten CV</p>
-                      <p>✓ Mengidentifikasi skill dan pengalaman</p>
-                      <p>✓ Menganalisis skill tersembunyi</p>
-                      <p className="text-sky-600">⏳ Menyiapkan rekomendasi...</p>
-                    </div>
+                  <div className="space-y-4">
+                    <Link href="/mbti-test">
+                      <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
+                        Lanjut ke Tes MBTI
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard">
+                      <Button
+                        variant="outline"
+                        className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
+                      >
+                        Lihat Dashboard
+                      </Button>
+                    </Link>
+                    <Button
+                      className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600"
+                      onClick={() => {
+                        window.location.href = "/mbti-test";
+                      }}
+                    >
+                      Lanjut ke Tahap Berikutnya
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
                   </div>
-                ) : (
-                  <div className="text-center space-y-6">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto">
-                      <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                    </div>
-
-                    {/* Removed analysisResult display */}
-
-                    <div className="space-y-4">
-                      <Link href="/mbti-test">
-                        <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                          Lanjut ke Tes MBTI
-                          <ArrowRight className="ml-2 w-4 h-4" />
-                        </Button>
-                      </Link>
-                      <Link href="/dashboard">
-                        <Button
-                          variant="outline"
-                          className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
-                        >
-                          Lihat Dashboard
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           )}

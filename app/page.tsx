@@ -1,48 +1,192 @@
-// Random comment: Another test push to GitHub
 "use client"
 export const dynamic = "force-dynamic";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { JobsSection } from "@/components/jobs-section"
-import { CoursesSection } from "@/components/courses-section"
-import {
-  ArrowRight,
-  Brain,
-  FileText,
-  Target,
-  TrendingUp,
-  MapPin,
-  DollarSign,
-  Users,
-  Shield,
-  Zap,
-  Star,
-  Award,
-  Globe,
-  Menu,
-  X,
-} from "lucide-react"
-import Link from "next/link"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Brain, Globe, X, Menu, ArrowRight } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { Suspense } from "react";
+import { JobsSection } from "@/components/jobs-section";
+import { CoursesSection } from "@/components/courses-section";
 
-export default function HomePage() {
+function HomePageContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Removed redirect logic and unused variables
+    if (!searchParams) return;
+    const code = searchParams.get("code");
+    if (code) {
+      // Exchange the code for a session (for Supabase v2+)
+      import("@/lib/supabase").then(({ supabase }) => {
+        supabase.auth.exchangeCodeForSession(code).then(() => {
+          // Remove the code param from the URL
+          router.replace("/", { scroll: false });
+        });
+      });
     }
-  }, []);
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   return (
-    <div className="min-h-screen">
+    <div>
+      {/* Header */}
+      <header className="border-b border-sky-100 bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Brain className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+            </div>
+            <div>
+              <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+                CareerMatch
+              </span>
+              <div className="text-xs font-medium text-emerald-600 hidden sm:block">AI-Powered Career Platform</div>
+            </div>
+          </Link>
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center space-x-8">
+            <Link href="#features" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+              Fitur
+            </Link>
+            <Link href="#jobs" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+              Jobs
+            </Link>
+            <Link href="#courses" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+              Courses
+            </Link>
+            <Link href="#how-it-works" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+              Cara Kerja
+            </Link>
+            <Badge className="bg-gradient-to-r from-emerald-100 to-sky-100 text-emerald-700 border-emerald-200">
+              <Globe className="w-3 h-3 mr-1" />
+              Untuk Indonesia
+            </Badge>
+          </nav>
+          {/* Desktop Buttons */}
+          <div className="hidden lg:flex items-center space-x-3">
+            {user ? (
+              <Link href="/profile">
+                <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
+                  Profil saya
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/auth/login">
+                  <Button
+                    variant="outline"
+                    className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+                  >
+                    Masuk
+                  </Button>
+                </Link>
+                <Link href="/auth/register">
+                  <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
+                    Daftar Gratis
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6 text-gray-600" />
+            ) : (
+              <Menu className="w-6 h-6 text-gray-600" />
+            )}
+          </button>
+        </div>
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-sky-100 bg-white/95 backdrop-blur-md">
+            <div className="container mx-auto px-4 py-4 space-y-4">
+              <nav className="flex flex-col space-y-4">
+                <Link 
+                  href="#features" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Fitur
+                </Link>
+                <Link 
+                  href="#jobs" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Jobs
+                </Link>
+                <Link 
+                  href="#courses" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Courses
+                </Link>
+                <Link 
+                  href="#how-it-works" 
+                  className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Cara Kerja
+                </Link>
+                <div className="flex items-center space-x-4 pt-4">
+                  {user ? (
+                    <Link href="/profile" className="flex-1">
+                      <Button
+                        className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Profil saya
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href="/auth/login" className="flex-1">
+                        <Button
+                          variant="outline"
+                          className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Masuk
+                        </Button>
+                      </Link>
+                      <Link href="/auth/register" className="flex-1">
+                        <Button 
+                          className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Daftar
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </nav>
+            </div>
+          </div>
+        )}
+      </header>
+
       {/* Hero Section */}
       <section className="py-12 sm:py-16 md:py-24 px-4 relative overflow-hidden">
         {/* Background Elements */}
@@ -81,13 +225,29 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 mb-12 sm:mb-16">
-            <Link href={user ? "/dashboard" : "/auth/register"} className="w-full sm:w-auto">
+            <Link
+              href={user ? "/dashboard" : "/auth/register"}
+              className="w-full sm:w-auto"
+              aria-disabled={loading}
+              tabIndex={loading ? -1 : 0}
+              style={loading ? { pointerEvents: "none", opacity: 0.6 } : {}}
+            >
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
+                disabled={loading}
               >
-                Mulai Perjalanan Karir
+                {loading ? "Memuat..." : "Mulai Perjalanan Karir"}
                 <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6" />
+              </Button>
+            </Link>
+            <Link href="#jobs" className="w-full sm:w-auto">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto border-2 border-sky-200 text-sky-600 hover:bg-sky-50 px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-semibold bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Lihat Jobs Terbaru
               </Button>
             </Link>
           </div>
@@ -421,6 +581,141 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-16 md:py-20 px-4">
+        <div className="container mx-auto">
+          <div className="flex items-center justify-center space-x-3 mb-12">
+            <div className="w-12 h-12 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Brain className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <span className="text-3xl font-bold">CareerMatch</span>
+              <div className="text-sm font-medium text-emerald-400">AI-Powered Career Platform</div>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 mb-12">
+            <div>
+              <h4 className="font-bold mb-4 text-lg">Platform</h4>
+              <ul className="space-y-3 text-gray-400">
+                <li>
+                  <Link href="/features" className="hover:text-white transition-colors">
+                    Fitur AI
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing" className="hover:text-white transition-colors">
+                    Harga
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/api" className="hover:text-white transition-colors">
+                    API Developer
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/enterprise" className="hover:text-white transition-colors">
+                    Enterprise
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4 text-lg">Perusahaan</h4>
+              <ul className="space-y-3 text-gray-400">
+                <li>
+                  <Link href="/about" className="hover:text-white transition-colors">
+                    Tentang CareerMatch
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/careers" className="hover:text-white transition-colors">
+                    Karir
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="hover:text-white transition-colors">
+                    Kontak
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/press" className="hover:text-white transition-colors">
+                    Press Kit
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4 text-lg">Dukungan</h4>
+              <ul className="space-y-3 text-gray-400">
+                <li>
+                  <Link href="/help" className="hover:text-white transition-colors">
+                    Bantuan
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/docs" className="hover:text-white transition-colors">
+                    Dokumentasi
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/status" className="hover:text-white transition-colors">
+                    Status Platform
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/community" className="hover:text-white transition-colors">
+                    Komunitas
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4 text-lg">Legal</h4>
+              <ul className="space-y-3 text-gray-400">
+                <li>
+                  <Link href="/privacy" className="hover:text-white transition-colors">
+                    Kebijakan Privasi
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="hover:text-white transition-colors">
+                    Syarat & Ketentuan
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/security" className="hover:text-white transition-colors">
+                    Keamanan Data
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/compliance" className="hover:text-white transition-colors">
+                    Compliance
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="text-center text-gray-400 pt-8 border-t border-gray-800">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Globe className="w-5 h-5 text-emerald-400" />
+              <span className="text-emerald-400 font-medium">Proudly Made in Indonesia</span>
+            </div>
+            <p className="text-lg">&copy; 2024 CareerMatch. Semua hak dilindungi.</p>
+            <p className="mt-2 text-gray-500">Platform AI untuk transformasi karir Indonesia yang lebih baik.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense>
+      <HomePageContent />
+    </Suspense>
+  );
 }

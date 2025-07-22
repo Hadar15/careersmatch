@@ -1,9 +1,10 @@
+// Random comment: Dashboard page random comment for push
 "use client"
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/lib/auth-context"
 import { getUserProfile, mockJobListings, mockCourses, mockSkillGaps, type UserProfile } from "@/lib/mock-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,6 +15,7 @@ import { Brain, MapPin, DollarSign, User, BookOpen, Clock, ArrowRight, Star, Upl
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import type { User as SupabaseUser } from "@supabase/supabase-js" // Kept from 'toriq' branch
 import { formatJobType } from "@/lib/utils" // Kept from 'main' branch
 
 console.log("DASHBOARD PAGE RENDERED");
@@ -62,19 +64,11 @@ export default function DashboardPage() {
   }, [user]);
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/");
-      toast({
-        title: "Logout Berhasil",
-        description: "Anda telah keluar dari akun",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Gagal logout",
-        variant: "destructive",
-      });
+    console.log("Logout button clicked");
+    await signOut();
+    // Fallback: force reload in case signOut does not reload
+    if (typeof window !== 'undefined') {
+      window.location.href = "/";
     }
   }
 
@@ -104,8 +98,57 @@ export default function DashboardPage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-        {/* Header dihandle oleh layout global */}
-        {/* Konten utama dashboard mulai di sini */}
+        {/* Header */}
+        <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                <Brain className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+                CareerMatch AI
+              </span>
+            </Link>
+            <nav className="hidden md:flex items-center space-x-4">
+              <Link href="/upload-cv">
+                <Button variant="outline" className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent">
+                  <Upload className="mr-2 w-4 h-4" />
+                  Upload CV
+                </Button>
+              </Link>
+              <Link href="/mbti-test">
+                <Button
+                  variant="outline"
+                  className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 bg-transparent"
+                >
+                  <Brain className="mr-2 w-4 h-4" />
+                  Tes MBTI
+                </Button>
+              </Link>
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
+              >
+                <LogOut className="mr-2 w-4 h-4" />
+                Logout
+              </Button>
+            </nav>
+
+            {/* Mobile Menu */}
+            <div className="md:hidden">
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                size="sm"
+                className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </header>
+
         <div className="container mx-auto px-4 py-6 md:py-8">
           {/* Welcome Section */}
           <div className="mb-6 md:mb-8">
@@ -123,10 +166,10 @@ export default function DashboardPage() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-yellow-800 mb-2">Lengkapi Profil Anda</h3>
                     <p className="text-yellow-700 text-sm mb-3">
-                      Profil Anda {profile.profile_completion}% lengkap. Lengkapi untuk mendapatkan rekomendasi yang
+                      Profil Anda {profile ? profile.profile_completion : 0}% lengkap. Lengkapi untuk mendapatkan rekomendasi yang
                       lebih akurat.
                     </p>
-                    <Progress value={profile.profile_completion} className="h-2 mb-2" />
+                    <Progress value={profile ? profile.profile_completion : 0} className="h-2 mb-2" />
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                     <Link href="/upload-cv">
@@ -166,13 +209,13 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 <div className="text-center">
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold text-sm md:text-lg">{profile?.mbti_type || "N/A"}</span>
+                    <span className="text-white font-bold text-sm md:text-lg">{profile ? profile.mbti_type || "N/A" : "N/A"}</span>
                   </div>
                   <p className="text-xs md:text-sm text-gray-600">Personality Type</p>
                 </div>
                 <div className="text-center">
                   <div className="text-lg md:text-2xl font-bold text-sky-600 mb-1">
-                    {profile?.experience_years || 0} th
+                    {profile ? profile.experience_years || 0 : 0} th
                   </div>
                   <p className="text-xs md:text-sm text-gray-600">Pengalaman</p>
                 </div>
@@ -182,10 +225,10 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-lg md:text-2xl font-bold text-sky-600 mb-1">
-                    {profile?.profile_completion || 0}%
+                    {profile ? profile.profile_completion || 0 : 0}%
                   </div>
                   <p className="text-xs md:text-sm text-gray-600">Profile Complete</p>
-                  <Progress value={profile?.profile_completion || 0} className="mt-2 h-1 md:h-2" />
+                  <Progress value={profile ? profile.profile_completion || 0 : 0} className="mt-2 h-1 md:h-2" />
                 </div>
               </div>
             </CardContent>

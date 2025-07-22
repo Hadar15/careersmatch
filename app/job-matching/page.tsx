@@ -176,8 +176,38 @@ export default function JobMatchingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-      {/* Header dihandle oleh layout global */}
-      {/* Konten utama job-matching mulai di sini */}
+      {/* Header */}
+      <header className="border-b border-sky-100 bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+                CareerMatch
+              </span>
+              <div className="text-xs font-medium text-emerald-600">AI-Powered Career Platform</div>
+            </div>
+          </Link>
+          <nav className="flex items-center space-x-4">
+            <Link href="/dashboard">
+              <Button
+                variant="outline"
+                className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+              >
+                Dashboard
+              </Button>
+            </Link>
+            <Link href="/profile">
+              <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg font-medium">
+                Profile
+              </Button>
+            </Link>
+          </nav>
+        </div>
+      </header>
+
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">

@@ -1,5 +1,5 @@
 // Komentar random: update untuk tes deploy Vercel terbaru
-import { createClient } from "@supabase/supabase-js"
+import { createBrowserClient } from "@supabase/ssr"
 
 /**
  * Supabase client – make sure your environment contains:
@@ -10,17 +10,6 @@ import { createClient } from "@supabase/supabase-js"
  *  NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
  *  NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
  */
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Supabase environment variables are missing.\n" +
-      "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment.",
-  )
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export type Database = {
   public: {
@@ -163,6 +152,11 @@ export type Database = {
     }
   }
 }
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 console.log("ENV URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 console.log("ENV KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
