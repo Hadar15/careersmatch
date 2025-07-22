@@ -2,6 +2,7 @@
 "use client"
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -29,7 +30,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 
-export default function HomePage() {
+function HomePageContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -735,4 +736,12 @@ export default function HomePage() {
       </footer>
     </div>
   )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense>
+      <HomePageContent />
+    </Suspense>
+  );
 }
