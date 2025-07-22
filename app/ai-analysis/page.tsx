@@ -1,13 +1,14 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import StepperProgress from "@/components/ui/stepper-progress";
 
 // 16 MBTI types
 const MBTI_TYPES = [
@@ -98,29 +99,7 @@ export default function AIAnalysisPage() {
   // Wrapper for background gradient and centering
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-      <div className="w-full max-w-3xl mb-10">
-        {/* Stepper label */}
-        <div className="flex justify-between items-center mb-2 px-2">
-          {STEPS.map((label, idx) => (
-            <div key={label} className={`flex-1 text-center text-xs md:text-base font-semibold ${activeStep === idx ? 'text-sky-700' : 'text-gray-400'}`}>{label}</div>
-          ))}
-        </div>
-        {/* Progress percentage */}
-        <div className="flex justify-between items-center mb-1 px-2">
-          <span className="text-xs text-gray-400 font-semibold">{progress}%</span>
-          <span className="text-xs text-gray-400 font-semibold">{progress === 100 ? 'Selesai' : ''}</span>
-        </div>
-        {/* Custom Progress Bar */}
-        <div className="relative h-4 flex items-center">
-          {/* Background bar */}
-          <div className="absolute left-0 right-0 h-3 rounded-full bg-sky-100" />
-          {/* Gradient progress */}
-          <div
-            className="h-3 rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-500"
-            style={{ width: `${progress}%`, zIndex: 1 }}
-          />
-        </div>
-      </div>
+      <StepperProgress step={activeStep} steps={STEPS} progress={progress} />
       {children}
     </div>
   );

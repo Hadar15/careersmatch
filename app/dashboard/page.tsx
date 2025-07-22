@@ -98,57 +98,6 @@ export default function DashboardPage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-        {/* Header */}
-        <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Brain className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-                CareerMatch AI
-              </span>
-            </Link>
-            <nav className="hidden md:flex items-center space-x-4">
-              <Link href="/upload-cv">
-                <Button variant="outline" className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent">
-                  <Upload className="mr-2 w-4 h-4" />
-                  Upload CV
-                </Button>
-              </Link>
-              <Link href="/mbti-test">
-                <Button
-                  variant="outline"
-                  className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 bg-transparent"
-                >
-                  <Brain className="mr-2 w-4 h-4" />
-                  Tes MBTI
-                </Button>
-              </Link>
-              <Button
-                onClick={handleSignOut}
-                variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
-              >
-                <LogOut className="mr-2 w-4 h-4" />
-                Logout
-              </Button>
-            </nav>
-
-            {/* Mobile Menu */}
-            <div className="md:hidden">
-              <Button
-                onClick={handleSignOut}
-                variant="outline"
-                size="sm"
-                className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </header>
-
         <div className="container mx-auto px-4 py-6 md:py-8">
           {/* Welcome Section */}
           <div className="mb-6 md:mb-8">

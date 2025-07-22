@@ -20,6 +20,7 @@ import { useRef } from "react";
 // @ts-ignore
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import StepperProgress from "@/components/ui/stepper-progress";
 
 // Add Photon geocoding API for place search
 // Remove PHOTON_API and add NOMINATIM_API
@@ -350,42 +351,27 @@ export default function UploadCVPage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-        {/* Header */}
-        <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Brain className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-                CareerMatch AI
-              </span>
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="outline" className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent">
+        <div className="container mx-auto px-4 py-8 md:py-12">
+          {/* Progress Bar */}
+          <StepperProgress
+            step={step === 1 ? 1 : step === 2 ? 2 : step === 3 ? 3 : 1}
+            steps={["Input/Tes MBTI", "Upload CV", "Hasil Analisis AI"]}
+            progress={step === 1 ? 33 : step === 2 ? 66 : step === 3 ? 100 : 33}
+          />
+
+          {/* Step 1: Personal Information */}
+          {step === 1 && (
+            <div className="max-w-2xl mx-auto mb-4 flex items-center">
+              <Button
+                variant="ghost"
+                className="px-3 py-2 text-sky-600 hover:bg-sky-50 flex items-center"
+                onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/ai-analysis'}
+              >
                 <ArrowLeft className="mr-2 w-4 h-4" />
                 Kembali
               </Button>
-            </Link>
-          </div>
-        </header>
-
-        <div className="container mx-auto px-4 py-8 md:py-12">
-          {/* Progress Bar */}
-          <div className="max-w-2xl mx-auto mb-6 md:mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-sky-600">Progress</span>
-              <span className="text-sm font-medium text-sky-600">{Math.round(progressValue)}%</span>
             </div>
-            <Progress value={progressValue} className="h-2" />
-            <div className="flex justify-between mt-2 text-xs text-gray-500">
-              <span>Info Personal</span>
-              <span>Upload CV</span>
-              <span>Analisis AI</span>
-            </div>
-          </div>
-
-          {/* Step 1: Personal Information */}
+          )}
           {step === 1 && (
             <Card className="max-w-2xl mx-auto border-sky-100 shadow-xl">
               <CardHeader className="text-center">
@@ -403,7 +389,7 @@ export default function UploadCVPage() {
                       name="name"
                       value={personalInfo.name}
                       onChange={handleChange}
-                      placeholder="John Doe"
+                      placeholder="Clementheo Benaya Raya Silitonga"
                     />
                   </div>
                   <div className="space-y-2">

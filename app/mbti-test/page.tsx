@@ -154,20 +154,6 @@ export default function MBTITestPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-      {/* Header */}
-      <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-              CareerMatch AI
-            </span>
-          </Link>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-12">
         {!isComplete ? (
           <>
