@@ -21,6 +21,7 @@ import { useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import StepperProgress from "@/components/ui/stepper-progress";
+import { useRouter } from "next/navigation";
 
 // Add Photon geocoding API for place search
 // Remove PHOTON_API and add NOMINATIM_API
@@ -34,6 +35,7 @@ const MAP_STYLE_URL = `https://api.maptiler.com/maps/streets/style.json?key=${MA
 export default function UploadCVPage() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const router = useRouter();
   const [step, setStep] = useState(1)
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [personalInfo, setPersonalInfo] = useState({
@@ -218,6 +220,8 @@ export default function UploadCVPage() {
       setAnalysisComplete(true);
       setUploadProgress(100);
       setStep(3);
+      // Tambahkan redirect langsung ke halaman AI Analysis
+      router.push("/ai-analysis");
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat upload.");
     } finally {
@@ -590,7 +594,7 @@ export default function UploadCVPage() {
                   Analisis Selesai!
                 </CardTitle>
                 <CardDescription>
-                  CV Anda telah dianalisis. Lanjutkan ke tes MBTI untuk hasil yang lebih akurat
+                  CV Anda telah dianalisis. Anda dapat melihat hasil analisis AI di bawah ini.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -598,31 +602,13 @@ export default function UploadCVPage() {
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-white" />
                   </div>
-                  <div className="space-y-4">
-                    <Link href="/mbti-test">
-                      <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                        Lanjut ke Tes MBTI
-                        <ArrowRight className="ml-2 w-4 h-4" />
-                      </Button>
-                    </Link>
-                    <Link href="/dashboard">
-                      <Button
-                        variant="outline"
-                        className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
-                      >
-                        Lihat Dashboard
-                      </Button>
-                    </Link>
-                    <Button
-                      className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600"
-                      onClick={() => {
-                        window.location.href = "/mbti-test";
-                      }}
-                    >
-                      Lanjut ke Tahap Berikutnya
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </div>
+                  <div className="text-lg text-sky-700 font-semibold">Analisis selesai! Silakan lihat hasil AI Anda.</div>
+                  <Button
+                    className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-semibold px-6 py-2 rounded-xl shadow transition"
+                    onClick={() => router.push("/ai-analysis")}
+                  >
+                    Lihat Hasil Analisis AI
+                  </Button>
                 </div>
               </CardContent>
             </Card>

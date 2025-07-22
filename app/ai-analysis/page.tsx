@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -75,6 +75,13 @@ const STEPS = [
   "Hasil Analisis AI"
 ];
 
+// Tambahkan helper untuk ambil hasil analisis dari localStorage
+function getCVAnalysis() {
+  if (typeof window === 'undefined') return null;
+  const saved = localStorage.getItem("cvAnalysis");
+  return saved ? JSON.parse(saved) : null;
+}
+
 export default function AIAnalysisPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -85,7 +92,7 @@ export default function AIAnalysisPage() {
   const [mbtiDesc, setMbtiDesc] = useState("");
   const [mbtiAnswers, setMbtiAnswers] = useState<Record<number, string>>({});
   const [cvFile, setCvFile] = useState<File | null>(null);
-  const [aiResult, setAiResult] = useState<{ skills: string[]; jobs: string[] }>({ skills: [], jobs: [] });
+  const [aiResult, setAiResult] = useState<any>(null);
   const [feedback, setFeedback] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -103,6 +110,12 @@ export default function AIAnalysisPage() {
       {children}
     </div>
   );
+
+  useEffect(() => {
+    // Ambil hasil analisis dari localStorage
+    const analysis = getCVAnalysis();
+    setAiResult(analysis);
+  }, []);
 
   // Step 0: Input MBTI (atau pilih tes)
   if (step === 0) {
@@ -235,13 +248,13 @@ export default function AIAnalysisPage() {
             <div>
               <div className="font-semibold text-gray-700 mb-1">Skill yang Dikuasai:</div>
               <ul className="list-disc ml-6 text-gray-800 space-y-1">
-                {aiResult.skills.map(skill => <li key={skill}>{skill}</li>)}
+                {aiResult?.skills?.map((skill: string, i: number) => <li key={i}>{skill}</li>)}
               </ul>
             </div>
             <div>
               <div className="font-semibold text-gray-700 mb-1 mt-4">Pekerjaan yang Cocok:</div>
               <ul className="list-disc ml-6 text-gray-800 space-y-1">
-                {aiResult.jobs.map(job => <li key={job}>{job}</li>)}
+                {aiResult?.industries?.map((job: string, i: number) => <li key={i}>{job} <span className="text-xs text-gray-500">(rekomendasi AI)</span></li>)}
               </ul>
             </div>
             <div className="mt-6">
@@ -256,6 +269,89 @@ export default function AIAnalysisPage() {
               <Button className="mt-2 w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-semibold shadow-lg rounded-xl py-3 text-lg" onClick={() => alert("Terima kasih atas feedback Anda!")}>Kirim</Button>
             </div>
             <Button variant="ghost" onClick={() => setStep(0)} className="w-full rounded-xl py-3 text-lg mt-2">Kembali ke Awal</Button>
+          </CardContent>
+        </Card>
+      </Wrapper>
+    );
+  }
+
+  // Step 4: Hasil AI (setelah upload CV)
+  if (step === 4 || (step === 0 && aiResult)) {
+    return (
+      <Wrapper>
+        <Card className="max-w-3xl w-full min-h-[420px] mx-auto rounded-3xl shadow-2xl border border-sky-100 bg-white/90 backdrop-blur-md flex flex-col justify-center items-center p-8">
+          <CardHeader className="w-full text-center mb-4">
+            <CardTitle className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent mb-2">Hasil Analisis AI</CardTitle>
+            <CardDescription className="text-gray-600">Berikut hasil analisis berdasarkan CV dan MBTI Anda</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-8 w-full max-w-2xl mx-auto">
+            {/* Jenis pekerjaan yang cocok */}
+            <div className="bg-gradient-to-r from-sky-100 to-emerald-50 rounded-2xl p-6 shadow">
+              <div className="font-bold text-lg text-sky-700 mb-2">Pekerjaan yang Cocok</div>
+              <ul className="list-disc ml-6 text-gray-800 space-y-1">
+                {aiResult?.industries?.map((job: string, i: number) => (
+                  <li key={i}>{job} <span className="text-xs text-gray-500">(rekomendasi AI)</span></li>
+                ))}
+              </ul>
+              <div className="text-sm text-gray-500 mt-2">AI memilih pekerjaan ini berdasarkan skill dan pengalaman Anda.</div>
+            </div>
+            {/* Rangkuman pengalaman dan skill */}
+            <div className="bg-gradient-to-r from-emerald-100 to-sky-50 rounded-2xl p-6 shadow">
+              <div className="font-bold text-lg text-emerald-700 mb-2">Rangkuman Pengalaman & Skill</div>
+              <div className="mb-2">
+                <span className="font-semibold">Total Pengalaman:</span> {aiResult?.experience?.totalYears || 0} tahun
+              </div>
+              <div className="mb-2">
+                <span className="font-semibold">Peran:</span>
+                <ul className="list-disc ml-6 text-gray-800">
+                  {aiResult?.experience?.roles?.map((role: any, i: number) => (
+                    <li key={i}>{role.title} di {role.company} ({role.duration})</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mb-2">
+                <span className="font-semibold">Skill Utama:</span>
+                <ul className="flex flex-wrap gap-2 mt-1">
+                  {aiResult?.skills?.map((skill: string, i: number) => (
+                    <li key={i} className="bg-sky-200 text-sky-800 rounded-full px-3 py-1 text-sm font-semibold shadow-sm">{skill}</li>
+                  ))}
+                </ul>
+              </div>
+              {aiResult?.hiddenSkills?.length > 0 && (
+                <div className="mb-2">
+                  <span className="font-semibold">Skill Tersembunyi:</span>
+                  <ul className="flex flex-wrap gap-2 mt-1">
+                    {aiResult?.hiddenSkills?.map((skill: string, i: number) => (
+                      <li key={i} className="bg-emerald-200 text-emerald-800 rounded-full px-3 py-1 text-sm font-semibold shadow-sm">{skill}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            {/* Saran dan Roadmap */}
+            {aiResult?.recommendations?.length > 0 && (
+              <div className="bg-gradient-to-r from-sky-50 to-emerald-100 rounded-2xl p-6 shadow">
+                <div className="font-bold text-lg text-emerald-700 mb-2">Saran & Roadmap Pengembangan Skill</div>
+                <ul className="list-disc ml-6 text-gray-800 space-y-1">
+                  {aiResult.recommendations.map((rec: string, i: number) => (
+                    <li key={i}>{rec}</li>
+                  ))}
+                </ul>
+                <div className="text-sm text-gray-500 mt-2">AI menyarankan roadmap ini agar Anda bisa meningkatkan peluang karir.</div>
+              </div>
+            )}
+            {/* Chat/pertanyaan ke AI */}
+            <div className="bg-white/80 border border-sky-100 rounded-2xl p-6 shadow flex flex-col gap-3">
+              <div className="font-bold text-lg text-sky-700 mb-2">Tanya AI</div>
+              <Textarea
+                value={feedback}
+                onChange={e => setFeedback(e.target.value)}
+                placeholder="Tulis pertanyaan atau konsultasi karir Anda di sini..."
+                rows={3}
+                className="rounded-xl border-emerald-200 shadow"
+              />
+              <Button className="mt-2 w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-semibold shadow-lg rounded-xl py-3 text-lg" onClick={() => alert("Fitur chat AI coming soon!")}>Kirim</Button>
+            </div>
           </CardContent>
         </Card>
       </Wrapper>
