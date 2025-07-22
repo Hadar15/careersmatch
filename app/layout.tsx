@@ -1,3 +1,4 @@
+// Random comment: Ini adalah komentar random untuk testing push ke main
 import type React from "react"
 import "./globals.css"
 import { Inter } from "next/font/google"
