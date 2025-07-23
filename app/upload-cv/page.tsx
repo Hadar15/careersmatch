@@ -60,6 +60,17 @@ export default function UploadCVPage() {
   // Add state for upload progress
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmittingPersonalInfo, setIsSubmittingPersonalInfo] = useState(false);
+  // State untuk MBTI
+  const [mbtiType, setMbtiType] = useState<string>("");
+  const [mbtiParagraph, setMbtiParagraph] = useState<string>("");
+
+  // Ambil MBTI dari localStorage saat mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setMbtiType(localStorage.getItem('mbtiType') || "");
+      setMbtiParagraph(localStorage.getItem('mbtiParagraph') || "");
+    }
+  }, []);
 
   // Debounced version of handlePersonalInfoSubmit to prevent multiple rapid clicks
   const debouncedPersonalInfoSubmit = useCallback(async () => {
@@ -409,6 +420,10 @@ export default function UploadCVPage() {
       // Tambahkan log untuk memastikan userId benar
       console.log('user.id yang dikirim ke backend:', user.id);
       formData.append('userId', user.id);
+      // Kirim location, mbtiType, mbtiParagraph
+      formData.append('location', JSON.stringify(personalInfo.location));
+      formData.append('mbtiType', mbtiType);
+      formData.append('mbtiParagraph', mbtiParagraph);
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/upload-cv');
