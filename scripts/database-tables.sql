@@ -1,5 +1,10 @@
 -- Enable RLS (Row Level Security)
-ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auth.users EN-- Enable RLS on tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cv_uploads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mbti_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.job_matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cv_analysis ENABLE ROW LEVEL SECURITY;ROW LEVEL SECURITY;
 
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -100,6 +105,16 @@ CREATE POLICY "Users can view own job matches" ON public.job_matches
 CREATE POLICY "Users can insert own job matches" ON public.job_matches
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+-- CV analysis policies
+CREATE POLICY "Users can view own CV analysis" ON public.cv_analysis
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own CV analysis" ON public.cv_analysis
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own CV analysis" ON public.cv_analysis
+  FOR UPDATE USING (auth.uid() = user_id);
+
 -- Create function to automatically create profile on user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -129,7 +144,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Create cv_analysis table for AI analysis results
+CREATE TABLE IF NOT EXISTS public.cv_analysis (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  cv_filename TEXT NOT NULL,
+  recommended_jobs JSONB NOT NULL,
+  experience_summary JSONB NOT NULL,
+  skill_roadmap JSONB NOT NULL,
+  raw_cv_data JSONB,
+  analyzed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create trigger for profiles updated_at
 CREATE TRIGGER handle_profiles_updated_at
   BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- Create trigger for cv_analysis updated_at
+CREATE TRIGGER handle_cv_analysis_updated_at
+  BEFORE UPDATE ON public.cv_analysis
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
