@@ -79,6 +79,12 @@ export default function UploadCVPage() {
     
     setIsSubmittingPersonalInfo(true);
     
+    // Safety timeout to reset loading state after 60 seconds
+    const safetyTimeout = setTimeout(() => {
+      console.warn('Personal info submission timed out, resetting loading state');
+      setIsSubmittingPersonalInfo(false);
+    }, 60000);
+    
     try {
       if (!user) {
         toast({
@@ -86,6 +92,7 @@ export default function UploadCVPage() {
           description: "Anda harus login untuk menyimpan data.",
           variant: "destructive",
         });
+        setIsSubmittingPersonalInfo(false);
         return;
       }
       
@@ -96,6 +103,7 @@ export default function UploadCVPage() {
           description: "Nama lengkap harus diisi.",
           variant: "destructive",
         });
+        setIsSubmittingPersonalInfo(false);
         return;
       }
       
@@ -105,6 +113,7 @@ export default function UploadCVPage() {
           description: "Email harus diisi.",
           variant: "destructive",
         });
+        setIsSubmittingPersonalInfo(false);
         return;
       }
       
@@ -143,6 +152,7 @@ export default function UploadCVPage() {
             title: "Berhasil",
             description: "Informasi personal tersimpan (mode offline)",
           })
+          setIsSubmittingPersonalInfo(false);
           return;
         } catch (localStorageError) {
           console.error("Failed to save to localStorage:", localStorageError);
@@ -151,6 +161,7 @@ export default function UploadCVPage() {
             description: "Gagal menyimpan data",
             variant: "destructive",
           });
+          setIsSubmittingPersonalInfo(false);
           return;
         }
       }
@@ -292,6 +303,7 @@ export default function UploadCVPage() {
         variant: "destructive",
       })
     } finally {
+      clearTimeout(safetyTimeout);
       setIsSubmittingPersonalInfo(false);
     }
   }, [user, personalInfo, toast, supabase, isSubmittingPersonalInfo]);

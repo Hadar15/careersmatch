@@ -50,8 +50,37 @@ export default function HasilAnalisisAIPage() {
             <CardTitle className="text-2xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">Hasil Analisis Tidak Ditemukan</CardTitle>
             <CardDescription className="mt-2">Silakan upload CV terlebih dahulu.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Button onClick={() => router.push("/upload-cv")} className="mt-4 w-full bg-gradient-to-r from-sky-500 to-emerald-500 text-white font-semibold">Upload CV</Button>
+            <Button 
+              onClick={() => {
+                // Create mock data for demo purposes
+                const mockAnalysis = {
+                  skills: ["JavaScript", "React", "Node.js", "Python", "SQL", "Git"],
+                  hiddenSkills: ["Leadership", "Project Management", "Problem Solving"],
+                  experience: {
+                    totalYears: 3,
+                    roles: [
+                      { title: "Frontend Developer", company: "Tech Corp", duration: "2 years" },
+                      { title: "Junior Developer", company: "StartupXYZ", duration: "1 year" },
+                    ],
+                  },
+                  industries: ["Technology", "Software Development"],
+                  level: "Mid-Level",
+                  recommendations: [
+                    "Consider learning TypeScript for better code quality",
+                    "Explore cloud technologies like AWS or Azure",
+                    "Develop leadership skills for senior roles",
+                  ],
+                };
+                localStorage.setItem("cvAnalysis", JSON.stringify(mockAnalysis));
+                window.location.reload();
+              }} 
+              variant="outline" 
+              className="w-full border-sky-200 text-sky-600 hover:bg-sky-50"
+            >
+              Lihat Demo Hasil Analisis
+            </Button>
           </CardContent>
         </Card>
       </div>
