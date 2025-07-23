@@ -446,7 +446,7 @@ export default function UploadCVPage() {
       setUploadProgress(100);
       setStep(3);
       // Tambahkan redirect langsung ke halaman AI Analysis
-      router.push("/ai-analysis");
+      router.push("/ai-analysis/hasil");
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat upload.");
     } finally {
@@ -788,7 +788,7 @@ export default function UploadCVPage() {
                   <div className="text-lg text-sky-700 font-semibold">Analisis selesai! Silakan lihat hasil AI Anda.</div>
                   <Button
                     className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-semibold px-6 py-2 rounded-xl shadow transition"
-                    onClick={() => router.push("/ai-analysis")}
+                    onClick={() => router.push("/ai-analysis/hasil")}
                   >
                     Lihat Hasil Analisis AI
                   </Button>
