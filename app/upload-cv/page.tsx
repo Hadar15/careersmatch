@@ -79,6 +79,12 @@ export default function UploadCVPage() {
     
     setIsSubmittingPersonalInfo(true);
     
+    // Safety timeout to reset loading state after 60 seconds
+    const safetyTimeout = setTimeout(() => {
+      console.warn('Personal info submission timed out, resetting loading state');
+      setIsSubmittingPersonalInfo(false);
+    }, 60000);
+    
     try {
       if (!user) {
         toast({
@@ -86,6 +92,7 @@ export default function UploadCVPage() {
           description: "Anda harus login untuk menyimpan data.",
           variant: "destructive",
         });
+        setIsSubmittingPersonalInfo(false);
         return;
       }
       
@@ -292,6 +299,7 @@ export default function UploadCVPage() {
         variant: "destructive",
       })
     } finally {
+      clearTimeout(safetyTimeout);
       setIsSubmittingPersonalInfo(false);
     }
   }, [user, personalInfo, toast, supabase, isSubmittingPersonalInfo]);
@@ -394,7 +402,7 @@ export default function UploadCVPage() {
     }
   };
 
-  // Handle submit
+  // Handle submit with extension error protection
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -411,13 +419,28 @@ export default function UploadCVPage() {
       setError("Silakan pilih lokasi di peta.");
       return;
     }
+    
+    // Prevent double submission
+    if (isAnalyzing) {
+      console.warn('Upload already in progress, ignoring duplicate submission');
+      return;
+    }
+    
     setIsAnalyzing(true);
     setUploadProgress(0);
+    
+    // Master timeout to ensure loading state is always reset
+    const masterTimeout = setTimeout(() => {
+      console.warn('Master timeout reached - resetting loading state');
+      setIsAnalyzing(false);
+      setUploadProgress(0);
+      setError("Upload timeout. Silakan coba lagi.");
+    }, 150000); // 2.5 minutes master timeout
+    
     try {
-      // Use XMLHttpRequest for progress
+      // Extension-safe upload with multiple fallback strategies
       const formData = new FormData();
       formData.append('file', cvFile);
-      // Tambahkan log untuk memastikan userId benar
       console.log('user.id yang dikirim ke backend:', user.id);
       formData.append('userId', user.id);
       // Kirim location, mbtiType, mbtiParagraph
@@ -464,10 +487,33 @@ export default function UploadCVPage() {
       console.log('Redirecting to /ai-analysis/hasil setelah upload dan pembuatan file JSON sukses');
       router.push("/ai-analysis/hasil");
     } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan saat upload.");
+      console.error('Upload error:', err);
+      clearTimeout(masterTimeout);
+      
+      // Enhanced error message for extension-related issues
+      let errorMessage = 'Terjadi kesalahan saat upload.';
+      
+      if (err instanceof Error) {
+        const message = err.message.toLowerCase();
+        if (message.includes('message channel closed') || 
+            message.includes('extension') || 
+            message.includes('listener indicated')) {
+          errorMessage = 'Upload terganggu oleh browser extension. Silakan nonaktifkan extension atau coba browser lain.';
+        } else if (message.includes('timeout') || message.includes('aborted')) {
+          errorMessage = 'Upload timeout. Silakan periksa koneksi internet dan coba lagi.';
+        } else if (message.includes('network') || message.includes('fetch')) {
+          errorMessage = 'Masalah koneksi internet. Silakan coba lagi.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
+      // Always ensure loading state is reset
+      clearTimeout(masterTimeout);
       setIsAnalyzing(false);
-      setTimeout(() => setUploadProgress(0), 1500); // Reset progress after short delay
+      setTimeout(() => setUploadProgress(0), 2000); // Reset progress after delay
     }
   };
 

@@ -242,7 +242,6 @@ export default function HasilAnalisisAIPage() {
       setLoading(false);
     }, 1200);
   };
-
   if (errorMsg) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
