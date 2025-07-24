@@ -284,16 +284,42 @@ export default function UploadCVPage() {
         profile_completion: 40,
         updated_at: new Date().toISOString(),
       }
-      
       try {
-        localStorage.setItem("userProfile", JSON.stringify(profile))
+        localStorage.setItem("userProfile", JSON.stringify(profile));
       } catch (localStorageError) {
         console.warn("Failed to save to localStorage:", localStorageError);
-        // Continue without localStorage - not critical
       }
-      
-      // Always proceed to next step
-      setStep(2)
+      // Langsung lanjut ke step berikutnya
+      setStep(2);
+      // Sync ke Supabase di background (tidak blocking UI)
+      (async () => {
+        try {
+          // Check if user is properly authenticated with Supabase
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          if (!session || !session.user) {
+            throw new Error("Session expired. Data will be saved locally only.");
+          }
+          // Upsert ke Supabase
+          await supabase
+            .from("profiles")
+            .upsert({
+              id: user.id,
+              email: personalInfo.email,
+              full_name: personalInfo.name,
+              phone: personalInfo.phone,
+              location: personalInfo.location ? JSON.stringify(personalInfo.location) : null,
+              professional_summary: personalInfo.summary || null,
+              experience_years: personalInfo.experience_years ? parseInt(personalInfo.experience_years, 10) : null,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "id" });
+        } catch (err) {
+          toast({
+            title: "Sync Cloud Gagal",
+            description: "Data Anda tersimpan lokal, tapi gagal sync ke cloud. Coba lagi nanti.",
+            variant: "default",
+          });
+        }
+      })();
     } catch (error) {
       console.error("Error updating profile:", error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
@@ -403,6 +429,8 @@ export default function UploadCVPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setCvFile(e.target.files[0]);
+      // Simpan nama file ke localStorage untuk analisis AI
+      localStorage.setItem('uploadedCVName', e.target.files[0].name);
     }
   };
 
