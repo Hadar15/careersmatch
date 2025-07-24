@@ -212,7 +212,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Return success response
-    return NextResponse.json({ success: true, filePath, jsonFilePath });
+    return NextResponse.json({ 
+      success: true, 
+      filePath, 
+      jsonFilePath,
+      fileName: fileName  // Add explicit filename for localStorage sync
+    });
   } catch (err: any) {
     return NextResponse.json({ error: 'Unexpected server error', details: err.message }, { status: 500 });
   }
