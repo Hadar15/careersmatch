@@ -210,7 +210,7 @@ export default function HasilAnalisisAIPage() {
                 Pengalaman: {aiResult.experience_summary.total_experience_years} tahun
               </div>
               <div className="space-y-2">
-                {aiResult.experience_summary.key_roles.map((role: { title: string; organization: string; duration: string; type: string }, i: number) => (
+                {aiResult.experience_summary.key_roles.map((role, i) => (
                   <div key={i} className="bg-white p-3 rounded-lg">
                     <div className="font-medium">{role.title}</div>
                     <div className="text-sm text-gray-600">{role.organization} • {role.duration}</div>
@@ -222,7 +222,7 @@ export default function HasilAnalisisAIPage() {
             <div className="mb-4">
               <div className="font-semibold mb-2">Technical Skills:</div>
               <div className="flex flex-wrap gap-2">
-                {aiResult.experience_summary.technical_skills.map((skill: string, i: number) => (
+                {aiResult.experience_summary.technical_skills.map((skill, i) => (
                   <span key={i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                     {skill}
                   </span>
@@ -233,7 +233,7 @@ export default function HasilAnalisisAIPage() {
             <div>
               <div className="font-semibold mb-2">Hidden Skills:</div>
               <div className="space-y-2">
-                {aiResult.experience_summary.hidden_skills && aiResult.experience_summary.hidden_skills.map((hiddenSkill: { skill: string; explanation: string }, i: number) => (
+                {aiResult.experience_summary.hidden_skills.map((hiddenSkill, i) => (
                   <div key={i} className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
                     <div className="font-medium text-yellow-800">{hiddenSkill.skill}</div>
                     <div className="text-sm text-yellow-700">{hiddenSkill.explanation}</div>
@@ -247,7 +247,7 @@ export default function HasilAnalisisAIPage() {
           <div className="bg-purple-50 rounded-2xl p-6">
             <div className="font-bold text-lg text-purple-700 mb-2">Roadmap Pengembangan Skill</div>
             <div className="space-y-3">
-              {aiResult.skill_roadmap.map((roadmapItem: { recommendation: string; reason: string; priority: string }, i: number) => (
+              {aiResult.skill_roadmap.map((roadmapItem, i) => (
                 <div key={i} className="bg-white p-4 rounded-lg border-l-4 border-purple-400">
                   <div className="font-medium mb-1">{roadmapItem.recommendation}</div>
                   <div className="text-sm text-gray-600 mb-2">{roadmapItem.reason}</div>
@@ -268,7 +268,7 @@ export default function HasilAnalisisAIPage() {
             <div className="font-bold text-lg mb-4">Tanya AI tentang Hasil Analisis</div>
             
             <div className="mb-4 max-h-64 overflow-y-auto space-y-3">
-              {chat.map((msg: { role: "user" | "ai"; message: string }, i: number) => (
+              {chat.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-xs px-4 py-2 rounded-lg ${
                     msg.role === "user" ? "bg-sky-500 text-white" : "bg-gray-100 text-gray-800"

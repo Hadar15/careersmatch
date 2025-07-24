@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -87,6 +87,8 @@ export default function AIAnalysisPage() {
   const router = useRouter();
   const [step, setStep] = useState(0); // 0: input MBTI, 1: tes MBTI, 2: hasil MBTI, 3: hasil AI
   const [mbtiInput, setMbtiInput] = useState("");
+  // Tambahkan ref untuk input MBTI
+  const mbtiInputRef = useRef<HTMLInputElement>(null);
   const [mbtiError, setMbtiError] = useState("");
   const [mbtiResult, setMbtiResult] = useState("");
   const [mbtiDesc, setMbtiDesc] = useState("");
@@ -128,11 +130,13 @@ export default function AIAnalysisPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-6 w-full max-w-md mx-auto">
             <Input
+              ref={mbtiInputRef}
               value={mbtiInput}
               onChange={e => setMbtiInput(e.target.value.toUpperCase())}
               placeholder="ENFP"
               className="text-center text-2xl tracking-widest font-bold border-emerald-200 rounded-xl py-4 bg-sky-50"
               maxLength={4}
+              autoFocus
             />
             {mbtiError && <div className="text-red-600 text-base font-semibold text-center">{mbtiError}</div>}
             <Button
@@ -143,6 +147,11 @@ export default function AIAnalysisPage() {
                 }
                 setMbtiResult(mbtiInput);
                 setMbtiDesc(MBTI_DESCRIPTIONS[mbtiInput] || "Deskripsi belum tersedia.");
+                // Simpan ke localStorage
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('mbtiType', mbtiInput);
+                  localStorage.setItem('mbtiParagraph', MBTI_DESCRIPTIONS[mbtiInput] || "Deskripsi belum tersedia.");
+                }
                 router.push("/upload-cv");
               }}
               className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-bold shadow-lg rounded-2xl py-4 text-xl tracking-wide"
@@ -204,6 +213,11 @@ export default function AIAnalysisPage() {
         (scores.J > scores.P ? "J" : "P");
       setMbtiResult(result);
       setMbtiDesc(MBTI_DESCRIPTIONS[result] || "Deskripsi belum tersedia.");
+      // Simpan ke localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mbtiType', result);
+        localStorage.setItem('mbtiParagraph', MBTI_DESCRIPTIONS[result] || "Deskripsi belum tersedia.");
+      }
       setStep(2);
       return null;
     }

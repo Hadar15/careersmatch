@@ -60,6 +60,17 @@ export default function UploadCVPage() {
   // Add state for upload progress
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmittingPersonalInfo, setIsSubmittingPersonalInfo] = useState(false);
+  // State untuk MBTI
+  const [mbtiType, setMbtiType] = useState<string>("");
+  const [mbtiParagraph, setMbtiParagraph] = useState<string>("");
+
+  // Ambil MBTI dari localStorage saat mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setMbtiType(localStorage.getItem('mbtiType') || "");
+      setMbtiParagraph(localStorage.getItem('mbtiParagraph') || "");
+    }
+  }, []);
 
   // Debounced version of handlePersonalInfoSubmit to prevent multiple rapid clicks
   const debouncedPersonalInfoSubmit = useCallback(async () => {
@@ -68,6 +79,12 @@ export default function UploadCVPage() {
     
     setIsSubmittingPersonalInfo(true);
     
+    // Safety timeout to reset loading state after 60 seconds
+    const safetyTimeout = setTimeout(() => {
+      console.warn('Personal info submission timed out, resetting loading state');
+      setIsSubmittingPersonalInfo(false);
+    }, 60000);
+    
     try {
       if (!user) {
         toast({
@@ -75,19 +92,196 @@ export default function UploadCVPage() {
           description: "Anda harus login untuk menyimpan data.",
           variant: "destructive",
         });
+        setIsSubmittingPersonalInfo(false);
         return;
       }
       
       // Validate required fields
       if (!personalInfo.name.trim()) {
+<<<<<<< HEAD
+        toast({
+          title: "Error",
+          description: "Nama lengkap harus diisi.",
+          variant: "destructive",
+=======
         toast({
           title: "Error",
           description: "Nama lengkap harus diisi.",
           variant: "destructive",
         });
+        setIsSubmittingPersonalInfo(false);
         return;
       }
       
+      if (!personalInfo.email.trim()) {
+        toast({
+          title: "Error", 
+          description: "Email harus diisi.",
+          variant: "destructive",
+        });
+        setIsSubmittingPersonalInfo(false);
+        return;
+      }
+      
+      console.log('Validation passed, user:', user);
+      console.log('User ID:', user.id);
+      console.log('User email:', user.email);
+      
+      // Check if user is properly authenticated with Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Current Supabase session:', session);
+      console.log('Session error:', sessionError);
+      
+      if (!session || !session.user) {
+        console.warn('No active Supabase session found');
+        toast({
+          title: "Warning",
+          description: "Session expired. Data will be saved locally only.",
+          variant: "default",
+        });
+        
+        // Skip Supabase and go directly to localStorage save
+        const profile = {
+          full_name: personalInfo.name,
+          phone: personalInfo.phone,
+          location: personalInfo.location,
+          professional_summary: personalInfo.summary,
+          experience_years: Number.parseInt(personalInfo.experience_years) || null,
+          profile_completion: 40,
+          updated_at: new Date().toISOString(),
+        }
+        
+        try {
+          localStorage.setItem("userProfile", JSON.stringify(profile))
+          setStep(2)
+          toast({
+            title: "Berhasil",
+            description: "Informasi personal tersimpan (mode offline)",
+          })
+          setIsSubmittingPersonalInfo(false);
+          return;
+        } catch (localStorageError) {
+          console.error("Failed to save to localStorage:", localStorageError);
+          toast({
+            title: "Error",
+            description: "Gagal menyimpan data",
+            variant: "destructive",
+          });
+          setIsSubmittingPersonalInfo(false);
+          return;
+        }
+      }
+      
+      // Add timeout protection for Supabase operations (increased to 30 seconds)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Operation timed out after 30 seconds')), 30000)
+      );
+      
+      console.log('Starting Supabase upsert for user:', user.id);
+      console.log('Personal info:', personalInfo);
+      
+      // First, try to get existing profile to understand the current state
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+        
+      console.log('Existing profile:', existingProfile);
+      console.log('Fetch error:', fetchError);
+      
+      // Retry logic for upsert operation
+      let upsertResult = null;
+      let upsertError = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          console.log(`Upsert attempt ${retryCount + 1}/${maxRetries}`);
+          
+          const upsertPromise = supabase
+            .from("profiles")
+            .upsert({
+              id: user.id,
+              email: personalInfo.email,
+              full_name: personalInfo.name,
+              phone: personalInfo.phone,
+              location: personalInfo.location ? JSON.stringify(personalInfo.location) : null,
+              professional_summary: personalInfo.summary || null,
+              experience_years: personalInfo.experience_years ? parseInt(personalInfo.experience_years, 10) : null,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "id" });
+            
+          const result = await Promise.race([upsertPromise, timeoutPromise]);
+          upsertResult = result;
+          upsertError = (result as any)?.error || null;
+          
+          if (!upsertError) {
+            console.log('Upsert successful on attempt', retryCount + 1);
+            break;
+          }
+          
+          console.log(`Attempt ${retryCount + 1} failed:`, upsertError);
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        } catch (error) {
+          console.log(`Attempt ${retryCount + 1} threw error:`, error);
+          upsertError = error;
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        }
+      }
+        
+      if (upsertError) {
+        console.error("Supabase upsert error:", upsertError);
+        
+        // Check for specific error types
+        if (upsertError.code === '42501' || upsertError.message?.includes('row-level security')) {
+          console.warn("RLS policy blocked the operation, proceeding with localStorage only");
+          
+          toast({
+            title: "Info",
+            description: "Data saved locally. You may need to re-authenticate for cloud sync.",
+            variant: "default",
+          });
+        } else if (upsertError.message?.includes('timeout') || upsertError.message?.includes('Operation timed out')) {
+          console.warn("Operation timed out, proceeding with localStorage only");
+          
+          toast({
+            title: "Warning", 
+            description: "Connection slow. Data saved locally.",
+            variant: "default",
+          });
+        } else {
+          console.warn("Supabase failed with error:", upsertError.message);
+          
+          toast({
+            title: "Warning",
+            description: "Data saved locally. Database sync may occur later.",
+            variant: "default",
+          });
+        }
+        
+        // Continue with localStorage save and proceed to next step
+      } else {
+        console.log("Supabase upsert successful");
+        
+        toast({
+          title: "Berhasil",
+          description: "Informasi personal tersimpan dan disinkronkan",
+>>>>>>> 515197f50dffc7b2d2fff8f95e196e888dfed3ae
+        });
+      }
+      
+<<<<<<< HEAD
       if (!personalInfo.email.trim()) {
         toast({
           title: "Error", 
@@ -252,6 +446,8 @@ export default function UploadCVPage() {
         });
       }
       
+=======
+>>>>>>> 515197f50dffc7b2d2fff8f95e196e888dfed3ae
       // Save to localStorage for demo (always do this)
       const profile = {
         full_name: personalInfo.name,
@@ -281,6 +477,7 @@ export default function UploadCVPage() {
         variant: "destructive",
       })
     } finally {
+      clearTimeout(safetyTimeout);
       setIsSubmittingPersonalInfo(false);
     }
   }, [user, personalInfo, toast, supabase, isSubmittingPersonalInfo]);
@@ -409,6 +606,10 @@ export default function UploadCVPage() {
       // Tambahkan log untuk memastikan userId benar
       console.log('user.id yang dikirim ke backend:', user.id);
       formData.append('userId', user.id);
+      // Kirim location, mbtiType, mbtiParagraph
+      formData.append('location', JSON.stringify(personalInfo.location));
+      formData.append('mbtiType', mbtiType);
+      formData.append('mbtiParagraph', mbtiParagraph);
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/upload-cv');
