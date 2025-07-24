@@ -237,7 +237,7 @@ export default function HasilAnalisisAIPage() {
     setTimeout(() => {
       setChat((prev) => [
         ...prev,
-        { role: "ai", message: "Terima kasih atas pertanyaannya! Fitur tanya AI akan segera hadir. (Integrasi API AI di sini)" },
+        { role: "ai", message: "Terima kasih atas pertanyaannya! Fitur tanya AI akan segera hadir." },
       ]);
       setLoading(false);
     }, 1200);
