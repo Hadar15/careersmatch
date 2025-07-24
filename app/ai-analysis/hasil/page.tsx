@@ -8,6 +8,11 @@ import { supabase } from "@/lib/supabase";
 import { remotiveAPI } from "@/lib/remotive-api";
 import { useAuth } from "@/lib/auth-context";
 
+function stripHtmlTags(str: string) {
+  if (!str) return '';
+  return str.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+}
+
 // Tambahan: Komponen Card untuk Job Match
 function JobMatchCard({ job, percent, pros, cons }: { job: any; percent: number; pros?: string[]; cons?: string[] }) {
   return (
@@ -18,7 +23,7 @@ function JobMatchCard({ job, percent, pros, cons }: { job: any; percent: number;
       </div>
       <div className="text-gray-600 font-medium truncate">{job.company_name}</div>
       <div className="text-xs text-gray-500 mb-1 truncate">{job.candidate_required_location} • {job.job_type}</div>
-      <div className="line-clamp-2 text-gray-700 text-xs mb-1">{job.description?.slice(0, 120)}...</div>
+      <div className="line-clamp-2 text-gray-700 text-xs mb-1">{stripHtmlTags(job.description?.slice(0, 120))}...</div>
       {pros && pros.length > 0 && (
         <div className="text-xs text-green-700 mt-1"><b>Pros:</b> {pros.join(", ")}</div>
       )}
@@ -72,6 +77,27 @@ async function fetchWithPolling(publicUrl: string, setErrorMsg: (msg: string) =>
   return null;
 }
 
+// Dummy data fallback
+const dummyCV = {
+  skills: ["React", "Node.js", "SQL", "Communication"],
+  experience: { totalYears: 2 },
+  industries: ["IT", "Education"],
+  level: "Junior",
+  recommendations: ["Tingkatkan skill backend", "Ambil sertifikasi cloud"]
+};
+const dummyJobs = [
+  { id: 1, title: "Frontend Developer", company_name: "TechCorp", candidate_required_location: "Remote", job_type: "Full-time", description: "Membangun UI modern dengan React.", url: "#", publication_date: "2024-01-01" },
+  { id: 2, title: "Backend Engineer", company_name: "DataSoft", candidate_required_location: "Jakarta", job_type: "Full-time", description: "API development dengan Node.js.", url: "#", publication_date: "2024-01-01" }
+];
+const dummyJobMatches = [
+  { job: dummyJobs[0], percent: 85, pros: ["Skill React sesuai", "Remote"], cons: ["Pengalaman < 3 tahun"] },
+  { job: dummyJobs[1], percent: 70, pros: ["Skill backend sesuai"], cons: ["Lokasi tidak remote"] }
+];
+const dummyCourses = [
+  { title: "React for Beginners", provider: "Coursera", url: "#", duration: "4 weeks", level: "Beginner", description: "Belajar React dari dasar.", reason: "React skill gap" },
+  { title: "Node.js Masterclass", provider: "Udemy", url: "#", duration: "6 weeks", level: "Intermediate", description: "Node.js untuk backend.", reason: "Backend skill gap" }
+];
+
 export default function HasilAnalisisAIPage() {
   const [aiResult, setAiResult] = useState<any>(null);
   const [feedback, setFeedback] = useState("");
@@ -84,8 +110,61 @@ export default function HasilAnalisisAIPage() {
   const [courseRecs, setCourseRecs] = useState<any[]>([]);
   const [courseLoading, setCourseLoading] = useState(false);
   const [courseError, setCourseError] = useState<string>("");
+  const [profile, setProfile] = useState<any>(null);
+  const [skillSummary, setSkillSummary] = useState<string>("");
   const { user } = useAuth();
   const router = useRouter();
+
+  // Ambil profile user (untuk experience_years)
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!user) return;
+      // Coba ambil dari Supabase
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('experience_years')
+        .eq('id', user.id)
+        .single();
+      if (data && typeof data.experience_years === 'number') {
+        setProfile(data);
+      } else if (typeof window !== 'undefined') {
+        // Fallback: localStorage
+        const local = localStorage.getItem('userProfile');
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            if (typeof parsed.experience_years === 'number') {
+              setProfile({ experience_years: parsed.experience_years });
+            }
+          } catch {}
+        }
+      }
+    }
+    fetchProfile();
+  }, [user]);
+
+  // Ambil rangkuman skill utama dari Gemini API
+  useEffect(() => {
+    async function fetchSkillSummary() {
+      if (!aiResult) return;
+      try {
+        const resp = await fetch('/api/skill-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cv: aiResult })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          setSkillSummary(data.summary || "");
+        } else {
+          setSkillSummary("");
+        }
+      } catch {
+        setSkillSummary("");
+      }
+    }
+    fetchSkillSummary();
+  }, [aiResult]);
 
   async function fetchLatestCVJson() {
     if (!user) return null;
@@ -177,12 +256,11 @@ export default function HasilAnalisisAIPage() {
       setErrorMsg("");
       setPollingStatus("");
       // 1. Ambil file JSON CV terbaru user dengan polling
-      const cvJson = await fetchLatestCVJson();
+      let cvJson = await fetchLatestCVJson();
       if (!cvJson) {
-        setJobLoading(false);
-        setErrorMsg("Gagal mengambil data CV JSON. Silakan upload ulang CV.");
-        if (typeof window !== 'undefined') console.error('[DEBUG] CV JSON kosong atau gagal diambil');
-        return;
+        // Fallback ke dummy CV
+        cvJson = dummyCV;
+        setErrorMsg("Gagal mengambil data CV JSON. Menggunakan data demo. Silakan upload ulang CV untuk hasil lebih akurat.");
       }
       if (typeof window !== 'undefined') console.log('[DEBUG] CV JSON:', cvJson);
       // 2. Set hasil analisis AI dari JSON
@@ -195,32 +273,43 @@ export default function HasilAnalisisAIPage() {
         recommendations: cvJson.recommendations || [],
       });
       // 3. Ambil seluruh job dari Remotive
-      const jobs = await fetchJobs();
+      let jobs = await fetchJobs();
       if (!jobs.length) {
-        setErrorMsg("Tidak ada data job dari Remotive API.");
-        setJobLoading(false);
-        if (typeof window !== 'undefined') console.error('[DEBUG] Jobs dari Remotive kosong');
-        return;
+        // Fallback ke dummy jobs
+        jobs = dummyJobs;
+        setErrorMsg("Tidak ada data job dari Remotive API. Menggunakan data demo.");
       }
       if (typeof window !== 'undefined') console.log('[DEBUG] Jobs:', jobs);
       // 4. Kirim ke Gemini API untuk pencocokan
       try {
-        const matches = await fetchJobMatches(cvJson, jobs);
+        let matches = [];
+        try {
+          matches = await fetchJobMatches(cvJson, jobs);
+        } catch {
+          // Fallback ke dummy job match
+          matches = dummyJobMatches;
+          setErrorMsg("Job match kosong. Menggunakan data demo.");
+        }
         if (!matches || !Array.isArray(matches) || matches.length === 0) {
-          setErrorMsg("Job match kosong. Cek backend /api/job-match.");
-          setJobLoading(false);
-          if (typeof window !== 'undefined') console.error('[DEBUG] Job match kosong:', matches);
-          return;
+          matches = dummyJobMatches;
+          setErrorMsg("Job match kosong. Menggunakan data demo.");
         }
         if (typeof window !== 'undefined') console.log('[DEBUG] Job match result:', matches);
         const sorted = matches.sort((a: any, b: any) => b.percent - a.percent).slice(0, 10);
         setJobMatches(sorted);
         setJobLoading(false);
         // 5. Setelah dapat 10 job teratas, fetch course recs
-        await fetchCourseRecs(cvJson, sorted.map((m: any) => m.job));
+        try {
+          await fetchCourseRecs(cvJson, sorted.map((m: any) => m.job));
+        } catch {
+          setCourseRecs(dummyCourses);
+          setCourseError("Course recommendation kosong. Menggunakan data demo.");
+        }
       } catch (e: any) {
-        setErrorMsg(e.message || "Gagal fetch job match dari Gemini API");
+        setJobMatches(dummyJobMatches);
         setJobLoading(false);
+        setCourseRecs(dummyCourses);
+        setCourseError("Gagal fetch job match dari Gemini API. Menggunakan data demo.");
         if (typeof window !== 'undefined') console.error('[DEBUG] Error fetch job match:', e);
       }
     }
@@ -237,7 +326,7 @@ export default function HasilAnalisisAIPage() {
     setTimeout(() => {
       setChat((prev) => [
         ...prev,
-        { role: "ai", message: "Terima kasih atas pertanyaannya! Fitur tanya AI akan segera hadir." },
+        { role: "ai", message: "Terima kasih atas pertanyaannya! Fitur tanya AI akan segera hadir. (Integrasi API AI di sini)" },
       ]);
       setLoading(false);
     }, 1200);
@@ -314,6 +403,29 @@ export default function HasilAnalisisAIPage() {
             )}
           </div>
 
+          {/* Rangkuman pengalaman dan skill */}
+          <div className="bg-gradient-to-r from-emerald-100 to-sky-50 rounded-2xl p-6 shadow">
+            <div className="font-bold text-lg text-emerald-700 mb-2">Rangkuman Pengalaman & Skill</div>
+            <div className="mb-2">
+              <span className="font-semibold">Total Pengalaman:</span> {profile?.experience_years ?? aiResult?.experience?.totalYears ?? 0} tahun
+            </div>
+            <div className="mb-2">
+              <span className="font-semibold">Skill Utama:</span>
+              <div className="mt-1 text-gray-800 text-sm">
+                {skillSummary ? skillSummary : <span className="italic text-gray-400">Memuat rangkuman skill utama...</span>}
+              </div>
+            </div>
+            {aiResult?.hiddenSkills?.length > 0 && (
+              <div className="mb-2">
+                <span className="font-semibold">Skill Tersembunyi:</span>
+                <ul className="flex flex-wrap gap-2 mt-1">
+                  {aiResult?.hiddenSkills?.map((skill: string, i: number) => (
+                    <li key={i} className="bg-emerald-200 text-emerald-800 rounded-full px-3 py-1 text-sm font-semibold shadow-sm">{skill}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
           {/* Saran dan Roadmap */}
           {aiResult?.recommendations?.length > 0 && (
             <div className="bg-gradient-to-r from-sky-50 to-emerald-100 rounded-2xl p-6 shadow">

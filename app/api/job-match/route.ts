@@ -1,67 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-function getConsistentPercent(userId: string, jobId: string) {
-  let hash = 0;
-  const str = userId + jobId;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return 60 + Math.abs(hash % 40); // 60-99
-}
-
 function stripHtml(html: string) {
   if (!html) return '';
   return html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 }
 
-async function getGeminiPros(cv: any, job: any) {
-  try {
-    const GEMINI_API_URL = process.env.GEMINI_API_URL || '';
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-    // Tambahkan log untuk debug env
-    console.log('[Gemini Debug] GEMINI_API_URL:', GEMINI_API_URL);
-    console.log('[Gemini Debug] GEMINI_API_KEY:', GEMINI_API_KEY ? 'SET' : 'NOT SET');
-    if (!GEMINI_API_URL || !GEMINI_API_KEY) throw new Error('Gemini API not configured');
-    const prompt = `Berdasarkan data CV berikut dan deskripsi pekerjaan berikut, sebutkan 2-3 keuntungan utama jika user mengambil pekerjaan ini. Jawab dalam array string.\n\nCV: ${JSON.stringify(cv)}\n\nDeskripsi Pekerjaan: ${job.title} - ${job.description}`;
-    const body = {
-      contents: [
-        { parts: [{ text: prompt }] }
-      ]
-    };
-    const resp = await fetch(GEMINI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GEMINI_API_KEY}`
-      },
-      body: JSON.stringify(body)
-    });
-    // Log response status dan body untuk debug
-    console.log('[Gemini Debug] Response status:', resp.status);
-    const data = await resp.json();
-    console.log('[Gemini Debug] Response data:', data);
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    // Try to parse as JSON array
-    let arr: string[] = [];
-    try {
-      arr = JSON.parse(text);
-      if (!Array.isArray(arr)) arr = [text];
-    } catch {
-      // Fallback: split by line
-      arr = text.split(/\n|\r/).map((s: string) => s.trim()).filter(Boolean);
-    }
-    // Only accept if at least one non-empty string
-    if (arr.length > 0 && arr.some((s) => s && typeof s === 'string' && s.length > 3)) {
-      return arr.slice(0, 3);
-    }
-    return null;
-  } catch (e) {
-    // Log error for debugging
-    // eslint-disable-next-line no-console
-    console.error('[Gemini API Error]', e);
-    return null;
+async function getGeminiJobMatch(cv: any, jobs: any[]) {
+  const GEMINI_API_URL = process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+  if (!GEMINI_API_KEY) throw new Error('Gemini API not configured');
+  
+  // Prompt: minta Gemini membandingkan CV dengan 10 job sekaligus, hasilkan array [{ job_title, percent, pros, cons }]
+  const prompt = `Berikut adalah data CV user dan ${jobs.length} deskripsi pekerjaan. Untuk setiap pekerjaan, analisis dan berikan skor kecocokan (0-100), pros (2-3 keuntungan utama jika user mengambil pekerjaan ini), dan cons (2-3 kekurangan/hal yang perlu dipertimbangkan). Jawab dalam format array JSON: [{ job_title, percent, pros, cons }].
+
+CV:
+${JSON.stringify(cv)}
+
+Jobs:
+${JSON.stringify(jobs.map(j => ({ title: j.title, description: stripHtml(j.description), company: j.company_name })))}
+`;
+  
+  const body = {
+    contents: [
+      { parts: [{ text: prompt }] }
+    ]
+  };
+  
+  const urlWithKey = `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`;
+  console.log('[Gemini Debug] Processing', jobs.length, 'jobs in batch');
+  
+  const resp = await fetch(urlWithKey, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  
+  if (!resp.ok) {
+    throw new Error(`Gemini API error: ${resp.status} ${resp.statusText}`);
   }
+  
+  const data = await resp.json();
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  
+  // Log isi response Gemini sebelum parsing
+  console.log('[Gemini Debug] Raw Gemini response:', text);
+  
+  // Clean up text (remove markdown, newlines)
+  // Perbaiki: ekstrak array JSON dari response Gemini jika ada penjelasan sebelum array
+  const jsonArrayMatch = text.match(/\[\s*{[\s\S]*}\s*\]/);
+  if (jsonArrayMatch) {
+    text = jsonArrayMatch[0];
+  } else {
+    text = text.replace(/^```json\n?|```$/g, '').replace(/\n+/g, ' ').trim();
+  }
+  
+  if (!text || text.length < 10) {
+    throw new Error('Gemini response kosong atau terlalu pendek. Response: ' + JSON.stringify(data));
+  }
+  
+  let arr: any[] = [];
+  try {
+    arr = JSON.parse(text);
+    if (!Array.isArray(arr)) arr = [];
+  } catch (parseError) {
+    // Kirim isi response Gemini ke frontend untuk debug
+    throw new Error('Failed to parse Gemini response as JSON. Response: ' + text);
+  }
+  
+  return arr;
 }
 
 export async function POST(req: NextRequest) {
@@ -70,34 +76,33 @@ export async function POST(req: NextRequest) {
     if (!cv || !jobs) {
       return NextResponse.json({ error: 'Missing cv or jobs' }, { status: 400 });
     }
-    const userId = cv.user_id || 'user';
-    const skills = (cv.skills || []).map((s: any) => s.toLowerCase());
-    // Analisis pros dari Gemini API secara paralel
+    
+    // Ambil 10 job teratas dari Remotive
     const jobsToProcess = jobs.slice(0, 10);
-    const prosArr = await Promise.all(jobsToProcess.map(async (job: any) => {
-      const jobId = job.id ? String(job.id) : job.title;
-      const percent = getConsistentPercent(userId, jobId);
-      const descPlain = stripHtml(job.description || '');
-      // Fallback pros/cons sederhana
-      const foundSkills = skills.filter((skill: any) => descPlain.toLowerCase().includes(skill));
-      const missingSkills = skills.filter((skill: any) => !descPlain.toLowerCase().includes(skill));
-      let pros = [];
-      // Coba Gemini API
-      const geminiPros = await getGeminiPros(cv, { ...job, description: descPlain });
-      if (geminiPros && geminiPros.length > 0) {
-        pros = geminiPros;
-      } else {
-        if (foundSkills.length > 0) pros.push(`Skill Anda relevan: ${foundSkills.join(', ')}`);
-        else pros.push('Pekerjaan ini dapat menjadi peluang baru untuk mengembangkan skill Anda.');
-      }
-      const cons = [];
-      if (missingSkills.length > 0) cons.push(`Skill berikut kurang relevan: ${missingSkills.join(', ')}`);
-      if (job.candidate_required_location) cons.push(`Lokasi: ${job.candidate_required_location}`);
-      return { job: { ...job, description: descPlain }, percent, pros, cons };
-    }));
-    const sorted = prosArr.sort((a: any, b: any) => b.percent - a.percent);
+    console.log('[Debug] Processing', jobsToProcess.length, 'jobs for user:', cv.user_id || 'unknown');
+    
+    // Panggil Gemini untuk seluruh job sekaligus
+    const geminiResults = await getGeminiJobMatch(cv, jobsToProcess);
+    console.log('[Debug] Gemini returned', geminiResults.length, 'job matches');
+    
+    // Gabungkan hasil Gemini dengan data job asli (cari berdasarkan title)
+    const result = geminiResults.map((g: any) => {
+      const job = jobsToProcess.find((j: any) => j.title === g.job_title);
+      return {
+        job,
+        percent: g.percent,
+        pros: g.pros,
+        cons: g.cons
+      };
+    }).filter((r: any) => r.job && typeof r.percent === 'number');
+    
+    // Urutkan dari percent tertinggi
+    const sorted = result.sort((a: any, b: any) => b.percent - a.percent);
+    
+    console.log('[Debug] Returning', sorted.length, 'matched jobs');
     return NextResponse.json(sorted);
   } catch (e: any) {
+    console.error('[Job Match Error]', e);
     return NextResponse.json({ error: e.message || 'Server error' }, { status: 500 });
   }
 } 
