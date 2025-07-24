@@ -406,7 +406,7 @@ export default function UploadCVPage() {
     }
   };
 
-  // Handle submit
+  // Handle submit with extension error protection
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -423,11 +423,26 @@ export default function UploadCVPage() {
       setError("Silakan pilih lokasi di peta.");
       return;
     }
+    
+    // Prevent double submission
+    if (isAnalyzing) {
+      console.warn('Upload already in progress, ignoring duplicate submission');
+      return;
+    }
+    
     setIsAnalyzing(true);
     setUploadProgress(0);
     
+    // Master timeout to ensure loading state is always reset
+    const masterTimeout = setTimeout(() => {
+      console.warn('Master timeout reached - resetting loading state');
+      setIsAnalyzing(false);
+      setUploadProgress(0);
+      setError("Upload timeout. Silakan coba lagi.");
+    }, 150000); // 2.5 minutes master timeout
+    
     try {
-      // Use XMLHttpRequest for progress tracking
+      // Extension-safe upload with multiple fallback strategies
       const formData = new FormData();
       formData.append('file', cvFile);
       console.log('user.id yang dikirim ke backend:', user.id);
@@ -437,108 +452,162 @@ export default function UploadCVPage() {
       formData.append('mbtiParagraph', mbtiParagraph);
       
       let uploadResult;
+      let uploadSuccess = false;
+      
+      // Strategy 1: Try modern fetch first (more extension-resistant)
       try {
-        uploadResult = await new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          let isCompleted = false;
-          
-          // Timeout handler
-          const timeoutId = setTimeout(() => {
-            if (!isCompleted) {
-              isCompleted = true;
-              xhr.abort();
-              reject(new Error('Upload timeout after 2 minutes'));
-            }
-          }, 120000); // 2 minutes timeout
-          
-          xhr.open('POST', '/api/upload-cv');
-          
-          xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable && !isCompleted) {
-              setUploadProgress(Math.round((event.loaded / event.total) * 100));
-            }
-          };
-          
-          xhr.onload = () => {
-            if (!isCompleted) {
-              isCompleted = true;
-              clearTimeout(timeoutId);
-              
-              if (xhr.status >= 200 && xhr.status < 300) {
-                resolve(xhr.responseText);
-              } else {
-                reject(new Error(xhr.responseText || 'Terjadi kesalahan saat upload.'));
-              }
-            }
-          };
-          
-          xhr.onerror = () => {
-            if (!isCompleted) {
-              isCompleted = true;
-              clearTimeout(timeoutId);
-              reject(new Error('Terjadi kesalahan saat upload.'));
-            }
-          };
-          
-          xhr.onabort = () => {
-            if (!isCompleted) {
-              isCompleted = true;
-              clearTimeout(timeoutId);
-              reject(new Error('Upload dibatalkan.'));
-            }
-          };
-          
-          try {
-            xhr.send(formData);
-          } catch (sendError) {
-            if (!isCompleted) {
-              isCompleted = true;
-              clearTimeout(timeoutId);
-              const errorMessage = sendError instanceof Error ? sendError.message : 'Unknown error';
-              reject(new Error('Gagal mengirim file: ' + errorMessage));
-            }
-          }
-        });
-      } catch (xhrError) {
-        console.warn('XMLHttpRequest failed, falling back to fetch:', xhrError);
+        console.log('Attempting upload with fetch API (Strategy 1)');
+        setUploadProgress(10);
         
-        // Fallback to fetch without progress tracking
-        setUploadProgress(50); // Set to 50% as we can't track progress with fetch
+        const controller = new AbortController();
+        const fetchTimeout = setTimeout(() => {
+          controller.abort();
+        }, 90000); // 90 second timeout for fetch
+        
         const response = await fetch('/api/upload-cv', {
           method: 'POST',
           body: formData,
+          signal: controller.signal
         });
+        
+        clearTimeout(fetchTimeout);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
+        setUploadProgress(50);
         uploadResult = await response.text();
-        setUploadProgress(100);
+        setUploadProgress(90);
+        uploadSuccess = true;
+        console.log('Fetch upload successful');
+        
+      } catch (fetchError) {
+        console.warn('Fetch upload failed, trying XMLHttpRequest fallback:', fetchError);
+        
+        // Strategy 2: XMLHttpRequest with enhanced extension protection
+        try {
+          uploadResult = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            let isCompleted = false;
+            let progressInterval: NodeJS.Timeout;
+            
+            // Enhanced timeout with cleanup
+            const timeoutId = setTimeout(() => {
+              if (!isCompleted) {
+                isCompleted = true;
+                if (progressInterval) clearInterval(progressInterval);
+                try {
+                  xhr.abort();
+                } catch (abortError) {
+                  console.warn('XHR abort failed:', abortError);
+                }
+                reject(new Error('Upload timeout after 90 seconds'));
+              }
+            }, 90000); // 90 seconds timeout
+            
+            // Fallback progress simulation for when onprogress fails
+            progressInterval = setInterval(() => {
+              if (!isCompleted && xhr.readyState !== 4) {
+                setUploadProgress(prev => Math.min(prev + 2, 80));
+              }
+            }, 1000);
+            
+            xhr.open('POST', '/api/upload-cv');
+            
+            // Wrap progress handler to catch extension errors
+            xhr.upload.onprogress = (event) => {
+              try {
+                if (event.lengthComputable && !isCompleted) {
+                  const progress = Math.round((event.loaded / event.total) * 90);
+                  setUploadProgress(progress);
+                }
+              } catch (progressError) {
+                console.warn('Progress event error (likely extension interference):', progressError);
+                // Continue without progress updates
+              }
+            };
+            
+            xhr.onload = () => {
+              if (!isCompleted) {
+                isCompleted = true;
+                clearTimeout(timeoutId);
+                if (progressInterval) clearInterval(progressInterval);
+                
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  setUploadProgress(90);
+                  resolve(xhr.responseText);
+                } else {
+                  reject(new Error(xhr.responseText || 'Upload failed'));
+                }
+              }
+            };
+            
+            const handleError = (errorType: string) => {
+              if (!isCompleted) {
+                isCompleted = true;
+                clearTimeout(timeoutId);
+                if (progressInterval) clearInterval(progressInterval);
+                reject(new Error(`Upload ${errorType}`));
+              }
+            };
+            
+            xhr.onerror = () => handleError('failed');
+            xhr.onabort = () => handleError('aborted');
+            xhr.ontimeout = () => handleError('timed out');
+            
+            try {
+              xhr.send(formData);
+            } catch (sendError) {
+              handleError('failed to start');
+            }
+          });
+          
+          uploadSuccess = true;
+          console.log('XMLHttpRequest upload successful');
+          
+        } catch (xhrError) {
+          console.error('Both fetch and XMLHttpRequest failed:', xhrError);
+          throw new Error('Upload failed with all methods. Please try again.');
+        }
+      }
+      
+      if (!uploadSuccess) {
+        throw new Error('Upload failed - no successful method');
       }
       
       console.log('CV upload successful, creating analysis data...');
+      setUploadProgress(95);
       
       // Create mock analysis data for the results page
       const mockAnalysis = await simulateAIAnalysis(cvFile.name);
       
       console.log('Mock analysis created:', mockAnalysis);
       
-      // Save analysis result to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem("cvAnalysis", JSON.stringify(mockAnalysis));
-        
-        // Update profile completion
-        const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
-        profile.profile_completion = 70;
-        localStorage.setItem("userProfile", JSON.stringify(profile));
-        
-        console.log('Analysis data saved to localStorage');
+      // Save analysis result to localStorage with error protection
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem("cvAnalysis", JSON.stringify(mockAnalysis));
+          
+          // Update profile completion
+          const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+          profile.profile_completion = 70;
+          localStorage.setItem("userProfile", JSON.stringify(profile));
+          
+          console.log('Analysis data saved to localStorage');
+        }
+      } catch (localStorageError) {
+        console.warn('localStorage save failed:', localStorageError);
+        // Continue without localStorage - not critical
       }
       
       // Update or insert profile (wrapped in try-catch to prevent errors from blocking success)
       try {
-        const { error: upsertError } = await supabase
+        const profileTimeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Profile update timeout')), 15000)
+        );
+        
+        const profileUpdate = supabase
           .from("profiles")
           .upsert({
             id: user.id,
@@ -551,13 +620,11 @@ export default function UploadCVPage() {
             updated_at: new Date().toISOString(),
           }, { onConflict: "id" });
         
-        if (upsertError) {
-          console.warn('Supabase profile update failed:', upsertError);
-          // Don't throw - continue with success flow
-        }
+        await Promise.race([profileUpdate, profileTimeout]);
+        
       } catch (profileError) {
         console.warn('Profile update error (non-blocking):', profileError);
-        // Continue without throwing
+        // Continue without throwing - profile update is not critical for upload success
       }
       
       setSuccess("CV dan profil berhasil diupload dan dianalisis!");
@@ -565,19 +632,52 @@ export default function UploadCVPage() {
       setUploadProgress(100);
       setStep(3);
       
-      // Add a small delay to ensure localStorage is saved before navigation
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Clear master timeout since we succeeded
+      clearTimeout(masterTimeout);
       
-      // Redirect to results page
-      router.push("/ai-analysis/hasil");
+      // Add a small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Reset loading state before navigation
+      setIsAnalyzing(false);
+      
+      // Protected navigation with fallback
+      try {
+        router.push("/ai-analysis/hasil");
+      } catch (navigationError) {
+        console.warn('Router navigation failed:', navigationError);
+        // Fallback: use window.location
+        window.location.href = "/ai-analysis/hasil";
+      }
       
     } catch (err: any) {
       console.error('Upload error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan saat upload.';
+      clearTimeout(masterTimeout);
+      
+      // Enhanced error message for extension-related issues
+      let errorMessage = 'Terjadi kesalahan saat upload.';
+      
+      if (err instanceof Error) {
+        const message = err.message.toLowerCase();
+        if (message.includes('message channel closed') || 
+            message.includes('extension') || 
+            message.includes('listener indicated')) {
+          errorMessage = 'Upload terganggu oleh browser extension. Silakan nonaktifkan extension atau coba browser lain.';
+        } else if (message.includes('timeout') || message.includes('aborted')) {
+          errorMessage = 'Upload timeout. Silakan periksa koneksi internet dan coba lagi.';
+        } else if (message.includes('network') || message.includes('fetch')) {
+          errorMessage = 'Masalah koneksi internet. Silakan coba lagi.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
     } finally {
+      // Always ensure loading state is reset
+      clearTimeout(masterTimeout);
       setIsAnalyzing(false);
-      setTimeout(() => setUploadProgress(0), 1500); // Reset progress after short delay
+      setTimeout(() => setUploadProgress(0), 2000); // Reset progress after delay
     }
   };
 
