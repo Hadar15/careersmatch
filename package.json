@@ -7,7 +7,7 @@
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "postinstall": "node scripts/patch-pdf-parse.js"
+    "postinstall": "node ./scripts/patch-pdf-parse.js"
   },
   "dependencies": {
     "@google/genai": "^1.9.0",
