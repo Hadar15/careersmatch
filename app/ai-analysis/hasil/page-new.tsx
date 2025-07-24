@@ -46,19 +46,12 @@ export default function HasilAnalisisAIPage() {
     const loadAnalysis = async () => {
       if (!user) return;
 
-      // Validate that we have a CV filename before proceeding
-      const cvFileName = localStorage.getItem("uploadedCVName");
-      if (!cvFileName) {
-        console.warn('No uploaded CV filename found in localStorage');
-        setError("No CV uploaded. Please upload your CV first.");
-        return;
-      }
-
-      console.log('Loading analysis for CV:', cvFileName);
       setAnalysisLoading(true);
       setError(null);
 
       try {
+        const cvFileName = localStorage.getItem("uploadedCVName") || "resume.pdf";
+        
         const response = await fetch("/api/analyze-cv", {
           method: "POST",
           headers: {

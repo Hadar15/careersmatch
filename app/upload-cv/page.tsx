@@ -579,40 +579,6 @@ export default function UploadCVPage() {
       console.log('CV upload successful, creating analysis data...');
       setUploadProgress(95);
       
-      // Save uploaded filename to localStorage for analysis API
-      try {
-        if (typeof window !== 'undefined') {
-          // Parse the upload response to get the actual filename used
-          let actualFileName = cvFile.name; // fallback to original filename
-          
-          try {
-            const response = JSON.parse(String(uploadResult));
-            if (response.success) {
-              // Prefer explicit fileName if available, otherwise extract from filePath
-              if (response.fileName) {
-                actualFileName = response.fileName;
-                console.log('Using explicit filename from API response:', actualFileName);
-              } else if (response.filePath) {
-                // Extract filename from path: "resumes/userId/filename.pdf" -> "filename.pdf"
-                const extractedFilename = response.filePath.split('/').pop();
-                if (extractedFilename) {
-                  actualFileName = extractedFilename;
-                  console.log('Extracted filename from filePath:', actualFileName);
-                }
-              }
-            }
-          } catch (parseError) {
-            console.warn('Could not parse upload response, using original filename:', cvFile.name);
-          }
-          
-          localStorage.setItem("uploadedCVName", actualFileName);
-          console.log('Saved uploaded CV filename to localStorage:', actualFileName);
-        }
-      } catch (error) {
-        console.warn('Failed to save uploaded filename:', error);
-        // Continue - this is not critical for upload success
-      }
-      
       // Create mock analysis data for the results page
       const mockAnalysis = await simulateAIAnalysis(cvFile.name);
       
