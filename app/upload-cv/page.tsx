@@ -64,16 +64,6 @@ export default function UploadCVPage() {
   const [mbtiType, setMbtiType] = useState<string>("");
   const [mbtiParagraph, setMbtiParagraph] = useState<string>("");
 
-  // Keep track of timeouts for cleanup
-  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
-
-  // Cleanup timeouts on unmount to prevent memory leaks and async errors
-  useEffect(() => {
-    return () => {
-      timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
-    };
-  }, []);
-
   // Ambil MBTI dari localStorage saat mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -94,7 +84,6 @@ export default function UploadCVPage() {
       console.warn('Personal info submission timed out, resetting loading state');
       setIsSubmittingPersonalInfo(false);
     }, 60000);
-    timeoutRefs.current.push(safetyTimeout);
     
     try {
       if (!user) {
@@ -437,41 +426,34 @@ export default function UploadCVPage() {
     setIsAnalyzing(true);
     setUploadProgress(0);
     try {
-      // Use fetch with simpler progress tracking
+      // Use XMLHttpRequest for progress
       const formData = new FormData();
       formData.append('file', cvFile);
+      // Tambahkan log untuk memastikan userId benar
       console.log('user.id yang dikirim ke backend:', user.id);
       formData.append('userId', user.id);
+      // Kirim location, mbtiType, mbtiParagraph
       formData.append('location', JSON.stringify(personalInfo.location));
       formData.append('mbtiType', mbtiType);
       formData.append('mbtiParagraph', mbtiParagraph);
-      
-      // Simulate progress for user feedback
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) return prev;
-          return prev + Math.random() * 10;
-        });
-      }, 500);
-      timeoutRefs.current.push(progressInterval);
-      
-      try {
-        const uploadResponse = await fetch('/api/upload-cv', {
-          method: 'POST',
-          body: formData,
-        });
-
-        clearInterval(progressInterval);
-        setUploadProgress(95);
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          throw new Error(errorText || 'Terjadi kesalahan saat upload.');
-        }
-      } catch (uploadError) {
-        clearInterval(progressInterval);
-        throw uploadError;
-      }
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload-cv');
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setUploadProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error(xhr.responseText || 'Terjadi kesalahan saat upload.'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Terjadi kesalahan saat upload.'));
+        xhr.send(formData);
+      });
       // Update or insert profile (as before)
       const { error: upsertError } = await supabase
         .from("profiles")
@@ -490,21 +472,13 @@ export default function UploadCVPage() {
       setAnalysisComplete(true);
       setUploadProgress(100);
       setStep(3);
-      
-      // Store CV filename for later use
-      localStorage.setItem("uploadedCVName", cvFile.name);
-      
-      // Add delay before navigation to ensure state updates complete
-      const navigationTimeout = setTimeout(() => {
-        router.push("/ai-analysis/hasil");
-      }, 1000);
-      timeoutRefs.current.push(navigationTimeout);
+      // Tambahkan redirect langsung ke halaman AI Analysis
+      router.push("/ai-analysis/hasil");
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat upload.");
     } finally {
       setIsAnalyzing(false);
-      const progressTimeout = setTimeout(() => setUploadProgress(0), 1500);
-      timeoutRefs.current.push(progressTimeout);
+      setTimeout(() => setUploadProgress(0), 1500); // Reset progress after short delay
     }
   };
 
