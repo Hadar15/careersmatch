@@ -98,12 +98,6 @@ export default function UploadCVPage() {
       
       // Validate required fields
       if (!personalInfo.name.trim()) {
-<<<<<<< HEAD
-        toast({
-          title: "Error",
-          description: "Nama lengkap harus diisi.",
-          variant: "destructive",
-=======
         toast({
           title: "Error",
           description: "Nama lengkap harus diisi.",
@@ -277,177 +271,9 @@ export default function UploadCVPage() {
         toast({
           title: "Berhasil",
           description: "Informasi personal tersimpan dan disinkronkan",
->>>>>>> 515197f50dffc7b2d2fff8f95e196e888dfed3ae
         });
       }
       
-<<<<<<< HEAD
-      if (!personalInfo.email.trim()) {
-        toast({
-          title: "Error", 
-          description: "Email harus diisi.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      console.log('Validation passed, user:', user);
-      console.log('User ID:', user.id);
-      console.log('User email:', user.email);
-      
-      // Check if user is properly authenticated with Supabase
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('Current Supabase session:', session);
-      console.log('Session error:', sessionError);
-      
-      if (!session || !session.user) {
-        console.warn('No active Supabase session found');
-        toast({
-          title: "Warning",
-          description: "Session expired. Data will be saved locally only.",
-          variant: "default",
-        });
-        
-        // Skip Supabase and go directly to localStorage save
-        const profile = {
-          full_name: personalInfo.name,
-          phone: personalInfo.phone,
-          location: personalInfo.location,
-          professional_summary: personalInfo.summary,
-          experience_years: Number.parseInt(personalInfo.experience_years) || null,
-          profile_completion: 40,
-          updated_at: new Date().toISOString(),
-        }
-        
-        try {
-          localStorage.setItem("userProfile", JSON.stringify(profile))
-          setStep(2)
-          toast({
-            title: "Berhasil",
-            description: "Informasi personal tersimpan (mode offline)",
-          })
-          return;
-        } catch (localStorageError) {
-          console.error("Failed to save to localStorage:", localStorageError);
-          toast({
-            title: "Error",
-            description: "Gagal menyimpan data",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-      
-      // Add timeout protection for Supabase operations (increased to 30 seconds)
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Operation timed out after 30 seconds')), 30000)
-      );
-      
-      console.log('Starting Supabase upsert for user:', user.id);
-      console.log('Personal info:', personalInfo);
-      
-      // First, try to get existing profile to understand the current state
-      const { data: existingProfile, error: fetchError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-        
-      console.log('Existing profile:', existingProfile);
-      console.log('Fetch error:', fetchError);
-      
-      // Retry logic for upsert operation
-      let upsertResult = null;
-      let upsertError = null;
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (retryCount < maxRetries) {
-        try {
-          console.log(`Upsert attempt ${retryCount + 1}/${maxRetries}`);
-          
-          const upsertPromise = supabase
-            .from("profiles")
-            .upsert({
-              id: user.id,
-              email: personalInfo.email,
-              full_name: personalInfo.name,
-              phone: personalInfo.phone,
-              location: personalInfo.location ? JSON.stringify(personalInfo.location) : null,
-              professional_summary: personalInfo.summary || null,
-              experience_years: personalInfo.experience_years ? parseInt(personalInfo.experience_years, 10) : null,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: "id" });
-            
-          const result = await Promise.race([upsertPromise, timeoutPromise]);
-          upsertResult = result;
-          upsertError = (result as any)?.error || null;
-          
-          if (!upsertError) {
-            console.log('Upsert successful on attempt', retryCount + 1);
-            break;
-          }
-          
-          console.log(`Attempt ${retryCount + 1} failed:`, upsertError);
-          retryCount++;
-          
-          if (retryCount < maxRetries) {
-            // Wait before retrying (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          }
-        } catch (error) {
-          console.log(`Attempt ${retryCount + 1} threw error:`, error);
-          upsertError = error;
-          retryCount++;
-          
-          if (retryCount < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          }
-        }
-      }
-        
-      if (upsertError) {
-        console.error("Supabase upsert error:", upsertError);
-        
-        // Check for specific error types
-        if (upsertError.code === '42501' || upsertError.message?.includes('row-level security')) {
-          console.warn("RLS policy blocked the operation, proceeding with localStorage only");
-          
-          toast({
-            title: "Info",
-            description: "Data saved locally. You may need to re-authenticate for cloud sync.",
-            variant: "default",
-          });
-        } else if (upsertError.message?.includes('timeout') || upsertError.message?.includes('Operation timed out')) {
-          console.warn("Operation timed out, proceeding with localStorage only");
-          
-          toast({
-            title: "Warning", 
-            description: "Connection slow. Data saved locally.",
-            variant: "default",
-          });
-        } else {
-          console.warn("Supabase failed with error:", upsertError.message);
-          
-          toast({
-            title: "Warning",
-            description: "Data saved locally. Database sync may occur later.",
-            variant: "default",
-          });
-        }
-        
-        // Continue with localStorage save and proceed to next step
-      } else {
-        console.log("Supabase upsert successful");
-        
-        toast({
-          title: "Berhasil",
-          description: "Informasi personal tersimpan dan disinkronkan",
-        });
-      }
-      
-=======
->>>>>>> 515197f50dffc7b2d2fff8f95e196e888dfed3ae
       // Save to localStorage for demo (always do this)
       const profile = {
         full_name: personalInfo.name,
@@ -458,16 +284,42 @@ export default function UploadCVPage() {
         profile_completion: 40,
         updated_at: new Date().toISOString(),
       }
-      
       try {
-        localStorage.setItem("userProfile", JSON.stringify(profile))
+        localStorage.setItem("userProfile", JSON.stringify(profile));
       } catch (localStorageError) {
         console.warn("Failed to save to localStorage:", localStorageError);
-        // Continue without localStorage - not critical
       }
-      
-      // Always proceed to next step
-      setStep(2)
+      // Langsung lanjut ke step berikutnya
+      setStep(2);
+      // Sync ke Supabase di background (tidak blocking UI)
+      (async () => {
+        try {
+          // Check if user is properly authenticated with Supabase
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          if (!session || !session.user) {
+            throw new Error("Session expired. Data will be saved locally only.");
+          }
+          // Upsert ke Supabase
+          await supabase
+            .from("profiles")
+            .upsert({
+              id: user.id,
+              email: personalInfo.email,
+              full_name: personalInfo.name,
+              phone: personalInfo.phone,
+              location: personalInfo.location ? JSON.stringify(personalInfo.location) : null,
+              professional_summary: personalInfo.summary || null,
+              experience_years: personalInfo.experience_years ? parseInt(personalInfo.experience_years, 10) : null,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "id" });
+        } catch (err) {
+          toast({
+            title: "Sync Cloud Gagal",
+            description: "Data Anda tersimpan lokal, tapi gagal sync ke cloud. Coba lagi nanti.",
+            variant: "default",
+          });
+        }
+      })();
     } catch (error) {
       console.error("Error updating profile:", error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
@@ -577,6 +429,8 @@ export default function UploadCVPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setCvFile(e.target.files[0]);
+      // Simpan nama file ke localStorage untuk analisis AI
+      localStorage.setItem('uploadedCVName', e.target.files[0].name);
     }
   };
 
