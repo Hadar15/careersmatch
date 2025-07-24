@@ -326,7 +326,7 @@ export default function HasilAnalisisAIPage() {
     setTimeout(() => {
       setChat((prev) => [
         ...prev,
-        { role: "ai", message: "Terima kasih atas pertanyaannya! Fitur tanya AI akan segera hadir. (Integrasi API AI di sini)" },
+        { role: "ai", message: "Terima kasih atas pertanyaannya! Fitur tanya AI akan segera hadir." },
       ]);
       setLoading(false);
     }, 1200);
@@ -403,41 +403,6 @@ export default function HasilAnalisisAIPage() {
             )}
           </div>
 
-          {/* Rangkuman pengalaman dan skill */}
-          <div className="bg-gradient-to-r from-emerald-100 to-sky-50 rounded-2xl p-6 shadow">
-            <div className="font-bold text-lg text-emerald-700 mb-2">Rangkuman Pengalaman & Skill</div>
-            <div className="mb-2">
-              <span className="font-semibold">Total Pengalaman:</span> {profile?.experience_years ?? aiResult?.experience?.totalYears ?? 0} tahun
-            </div>
-            <div className="mb-2">
-              <span className="font-semibold">Skill Utama:</span>
-              <div className="mt-1 text-gray-800 text-sm">
-                {skillSummary ? skillSummary : <span className="italic text-gray-400">Memuat rangkuman skill utama...</span>}
-              </div>
-            </div>
-            {aiResult?.hiddenSkills?.length > 0 && (
-              <div className="mb-2">
-                <span className="font-semibold">Skill Tersembunyi:</span>
-                <ul className="flex flex-wrap gap-2 mt-1">
-                  {aiResult?.hiddenSkills?.map((skill: string, i: number) => (
-                    <li key={i} className="bg-emerald-200 text-emerald-800 rounded-full px-3 py-1 text-sm font-semibold shadow-sm">{skill}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-          {/* Saran dan Roadmap */}
-          {aiResult?.recommendations?.length > 0 && (
-            <div className="bg-gradient-to-r from-sky-50 to-emerald-100 rounded-2xl p-6 shadow">
-              <div className="font-bold text-lg text-emerald-700 mb-2">Saran & Roadmap Pengembangan Skill</div>
-              <ul className="list-disc ml-6 text-gray-800 space-y-1">
-                {aiResult.recommendations.map((rec: string, i: number) => (
-                  <li key={i}>{rec}</li>
-                ))}
-              </ul>
-              <div className="text-sm text-gray-500 mt-2">AI menyarankan roadmap ini agar Anda bisa meningkatkan peluang karir.</div>
-            </div>
-          )}
           {/* Chat/pertanyaan ke AI */}
           <div className="bg-white/80 border border-sky-100 rounded-2xl p-6 shadow flex flex-col gap-3">
             <div className="font-bold text-lg text-sky-700 mb-2">Tanya AI</div>

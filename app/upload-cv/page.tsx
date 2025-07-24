@@ -397,7 +397,6 @@ export default function UploadCVPage() {
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🚀 Starting handleSubmit');
     setError("");
     setSuccess("");
     if (!user) {
@@ -415,7 +414,6 @@ export default function UploadCVPage() {
     setIsAnalyzing(true);
     setUploadProgress(0);
     try {
-      console.log('📤 Starting upload...');
       // Use XMLHttpRequest for progress
       const formData = new FormData();
       formData.append('file', cvFile);
@@ -426,7 +424,7 @@ export default function UploadCVPage() {
       formData.append('location', JSON.stringify(personalInfo.location));
       formData.append('mbtiType', mbtiType);
       formData.append('mbtiParagraph', mbtiParagraph);
-      const responseText = await new Promise<string>((resolve, reject) => {
+      await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/upload-cv');
         xhr.upload.onprogress = (event) => {
@@ -438,44 +436,43 @@ export default function UploadCVPage() {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(xhr.responseText);
           } else {
-            reject(new Error(xhr.responseText || 'Terjadi kesalahan saat upload.'));
+            // Tampilkan error detail dari backend
+            let msg = 'Terjadi kesalahan saat upload.';
+            try {
+              const errJson = JSON.parse(xhr.responseText);
+              msg = errJson.error + (errJson.details ? `: ${errJson.details}` : '');
+            } catch {}
+            reject(new Error(msg));
           }
         };
         xhr.onerror = () => reject(new Error('Terjadi kesalahan saat upload.'));
         xhr.send(formData);
       });
-
-      // Parse the JSON response
-      console.log('📥 Raw response:', responseText);
-      const result = JSON.parse(responseText);
-      console.log('📊 Parsed response:', result);
-
-      if (!result.success) {
-        throw new Error(result.error || 'Upload failed');
-      }
-
-      console.log('✅ Upload successful, continuing with profile update...');
-      
-      // Profile was already updated in step 1, no need to update again
-      console.log('✅ Profile was already updated in step 1, skipping duplicate update');
-      
-      console.log('✅ Profile updated successfully');
+      // Update or insert profile (as before)
+      const { error: upsertError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          email: personalInfo.email,
+          full_name: personalInfo.name,
+          phone: personalInfo.phone,
+          location: JSON.stringify(personalInfo.location),
+          professional_summary: personalInfo.summary,
+          experience_years: parseInt(personalInfo.experience_years, 10),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+      if (upsertError) throw upsertError;
       setSuccess("CV dan profil berhasil diupload dan dianalisis!");
       setAnalysisComplete(true);
       setUploadProgress(100);
-      setStep(3);
-      
-      console.log('🚀 Redirecting to /ai-analysis/hasil setelah upload dan pembuatan file JSON sukses');
-      // Add a small delay to ensure state updates are completed
-      setTimeout(() => {
-        router.push("/ai-analysis/hasil");
-      }, 1000);
+      // Langsung redirect ke halaman hasil analisis AI
+      router.push("/ai-analysis/hasil");
+      return;
+      // setStep(3); // Hapus tampilan step 3
     } catch (err: any) {
-      console.error('💥 Upload error:', err);
       setError(err.message || "Terjadi kesalahan saat upload.");
     } finally {
       setIsAnalyzing(false);
-      console.log('🏁 Upload process finished');
       setTimeout(() => setUploadProgress(0), 1500); // Reset progress after short delay
     }
   };

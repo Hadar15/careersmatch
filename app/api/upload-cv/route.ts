@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
     const mbtiParagraph = formData.get('mbtiParagraph');
 
     if (!file || typeof userId !== 'string') {
-      return NextResponse.json({ error: 'Missing file or userId' }, { status: 400 });
+      console.error('[UploadCV] Missing file or userId', { file, userId });
+      return NextResponse.json({ error: 'Missing file or userId', details: `file: ${!!file}, userId: ${userId}` }, { status: 400 });
     }
     // Parse location jika ada
     let location = null;
@@ -56,13 +57,15 @@ export async function POST(request: NextRequest) {
     const fileExt = fileName.split('.').pop()?.toLowerCase();
     console.log('Received file:', fileName, 'Type:', fileObj.type, 'Size:', fileObj.size, 'userId:', userId);
     if (!['pdf', 'docx'].includes(fileExt || '')) {
-      return NextResponse.json({ error: 'Invalid file type. Only PDF and DOCX are allowed.' }, { status: 400 });
+      console.error('[UploadCV] Invalid file type', fileExt);
+      return NextResponse.json({ error: 'Invalid file type. Only PDF and DOCX are allowed.', details: fileExt }, { status: 400 });
     }
 
     // 3. Upload the file to Supabase Storage
     const arrayBuffer = await fileObj.arrayBuffer();
     console.log('arrayBuffer type:', typeof arrayBuffer, 'byteLength:', arrayBuffer.byteLength);
     if (!arrayBuffer || (arrayBuffer.byteLength !== undefined && arrayBuffer.byteLength === 0)) {
+      console.error('[UploadCV] Uploaded file is empty or could not be read.');
       return NextResponse.json({ error: 'Uploaded file is empty or could not be read.' }, { status: 400 });
     }
     const filePath = `resumes/${userId}/${fileName}`;
@@ -71,6 +74,7 @@ export async function POST(request: NextRequest) {
       upsert: true,
     });
     if (uploadError) {
+      console.error('[UploadCV] Failed to upload CV to storage', uploadError);
       return NextResponse.json({ error: 'Failed to upload CV to storage', details: uploadError.message }, { status: 500 });
     }
 
@@ -96,12 +100,14 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!extractedText.trim()) {
+      console.error('[UploadCV] Failed to extract text from CV.');
       return NextResponse.json({ error: 'Failed to extract text from CV.' }, { status: 500 });
     }
 
     // 5. Call Gemini Pro API to extract required info
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error('[UploadCV] Gemini API key not set in environment.');
       return NextResponse.json({ error: 'Gemini API key not set in environment.' }, { status: 500 });
     }
     const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -172,6 +178,7 @@ export async function POST(request: NextRequest) {
       } catch (e) {}
       // Fallback jika Gemini gagal atau kosong
       if (!mbtiText) {
+        console.warn('[UploadCV] Gemini MBTI fallback used for', mbtiType);
         const mbtiDescriptions: Record<string, string> = {
           ISTJ: `Orang dengan tipe ini dikenal sangat logis, bertanggung jawab, dan sangat terorganisir. Mereka cenderung memegang teguh prinsip, dapat diandalkan, dan suka bekerja dengan sistem yang jelas. Dalam interaksi sosial, mereka lebih suka lingkungan yang terstruktur dan menghargai tradisi serta aturan yang berlaku.\n\nDalam dunia kerja, mereka cocok di bidang administrasi, keuangan, atau manajemen yang membutuhkan ketelitian dan konsistensi. Tantangan utama adalah fleksibilitas terhadap perubahan mendadak. Tips pengembangan diri: belajar lebih terbuka terhadap ide baru dan meningkatkan kemampuan komunikasi interpersonal.`,
           ISFJ: `Tipe ini sangat setia, teliti, dan peduli terhadap orang lain. Mereka suka membantu, perhatian pada detail, dan sering menjadi pendengar yang baik. Dalam hubungan sosial, mereka cenderung hangat, suportif, dan menjaga keharmonisan kelompok.\n\nKarir yang cocok meliputi bidang kesehatan, pendidikan, atau pelayanan sosial. Tantangan yang sering dihadapi adalah kesulitan berkata 'tidak' dan cenderung mengabaikan kebutuhan diri sendiri. Tips: belajar menetapkan batasan dan mengutamakan self-care.`,
@@ -208,6 +215,7 @@ export async function POST(request: NextRequest) {
       upsert: true,
     });
     if (jsonUploadError) {
+      console.error('[UploadCV] Failed to upload extracted JSON to storage', jsonUploadError);
       return NextResponse.json({ error: 'Failed to upload extracted JSON to storage', details: jsonUploadError.message }, { status: 500 });
     }
 
@@ -227,12 +235,14 @@ export async function POST(request: NextRequest) {
       }
     ]);
     if (insertError) {
+      console.error('[UploadCV] Failed to insert metadata to cv_uploads', insertError);
       return NextResponse.json({ error: 'Failed to insert metadata to cv_uploads', details: insertError.message }, { status: 500 });
     }
 
     // 8. Return success response
     return NextResponse.json({ success: true, filePath, jsonFilePath });
   } catch (err: any) {
+    console.error('[UploadCV] Unexpected server error', err);
     return NextResponse.json({ error: 'Unexpected server error', details: err.message }, { status: 500 });
   }
 } 

@@ -1,103 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const dummyCourses = [
-  {
-    title: 'React for Beginners',
-    provider: 'Coursera',
-    url: 'https://coursera.org/learn/react',
-    duration: '4 weeks',
-    level: 'Beginner',
-    description: 'Belajar React dari dasar hingga mahir.',
-    reason: 'Skill React dibutuhkan untuk job match teratas.'
-  },
-  {
-    title: 'Advanced Node.js',
-    provider: 'Udemy',
-    url: 'https://udemy.com/course/advanced-nodejs',
-    duration: '6 weeks',
-    level: 'Advanced',
-    description: 'Node.js untuk backend development modern.',
-    reason: 'Backend Node.js sering muncul di job match.'
-  },
-  {
-    title: 'Effective Communication',
-    provider: 'edX',
-    url: 'https://edx.org/course/effective-communication',
-    duration: '3 weeks',
-    level: 'All Levels',
-    description: 'Tingkatkan kemampuan komunikasi profesional.',
-    reason: 'Soft skill penting untuk kolaborasi tim.'
-  },
-  {
-    title: 'SQL & Databases',
-    provider: 'Coursera',
-    url: 'https://coursera.org/learn/sql-databases',
-    duration: '5 weeks',
-    level: 'Intermediate',
-    description: 'Dasar hingga lanjutan SQL dan database.',
-    reason: 'SQL dibutuhkan di banyak job IT.'
-  },
-  {
-    title: 'Project Management Basics',
-    provider: 'Udemy',
-    url: 'https://udemy.com/course/project-management-basics',
-    duration: '2 weeks',
-    level: 'Beginner',
-    description: 'Dasar-dasar manajemen proyek modern.',
-    reason: 'Project management sering jadi skill gap.'
-  },
-  {
-    title: 'Python for Everybody',
-    provider: 'Coursera',
-    url: 'https://coursera.org/learn/python',
-    duration: '6 weeks',
-    level: 'Beginner',
-    description: 'Belajar Python dari nol.',
-    reason: 'Python sering dibutuhkan di job teknologi.'
-  },
-  {
-    title: 'Cloud Computing Fundamentals',
-    provider: 'edX',
-    url: 'https://edx.org/course/cloud-computing',
-    duration: '4 weeks',
-    level: 'Intermediate',
-    description: 'Dasar cloud dan deployment modern.',
-    reason: 'Cloud skill gap untuk banyak perusahaan.'
-  },
-  {
-    title: 'Leadership Essentials',
-    provider: 'Udemy',
-    url: 'https://udemy.com/course/leadership-essentials',
-    duration: '3 weeks',
-    level: 'All Levels',
-    description: 'Skill kepemimpinan untuk profesional.',
-    reason: 'Leadership penting untuk naik jabatan.'
-  },
-  {
-    title: 'Agile & Scrum',
-    provider: 'Coursera',
-    url: 'https://coursera.org/learn/agile-scrum',
-    duration: '2 weeks',
-    level: 'Beginner',
-    description: 'Metode agile dan scrum untuk tim modern.',
-    reason: 'Agile banyak digunakan di perusahaan teknologi.'
-  },
-  {
-    title: 'UI/UX Design Fundamentals',
-    provider: 'edX',
-    url: 'https://edx.org/course/ui-ux-design',
-    duration: '4 weeks',
-    level: 'Beginner',
-    description: 'Dasar desain UI/UX untuk aplikasi modern.',
-    reason: 'UI/UX skill gap untuk pengembangan produk.'
+async function getGeminiCourseRecommend(cv: any, jobs: any[], prompt: string) {
+  const GEMINI_API_URL = process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+  if (!GEMINI_API_URL || !GEMINI_API_KEY) throw new Error('Gemini API not configured');
+  const body = {
+    contents: [
+      { parts: [{ text: prompt }] }
+    ]
+  };
+  const urlWithKey = `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`;
+  const resp = await fetch(urlWithKey, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await resp.json();
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  // Log isi response Gemini sebelum parsing
+  console.log('[Gemini Debug] Raw Gemini response:', text);
+  // Clean up text (remove markdown, newlines)
+  const jsonArrayMatch = text.match(/\[\s*{[\s\S]*}\s*\]/);
+  if (jsonArrayMatch) {
+    text = jsonArrayMatch[0];
+  } else {
+    text = text.replace(/^```json\n?|```$/g, '').replace(/\n+/g, ' ').trim();
   }
-];
-
-export async function POST(req: NextRequest) {
+  if (!text || text.length < 10) {
+    throw new Error('Gemini response kosong atau terlalu pendek. Response: ' + JSON.stringify(data));
+  }
+  let arr: any[] = [];
   try {
-    // Bisa tambahkan logika skill gap di sini jika ingin lebih dinamis
-    return NextResponse.json(dummyCourses);
+    arr = JSON.parse(text);
+    if (!Array.isArray(arr)) arr = [];
+  } catch {
+    throw new Error('Failed to parse Gemini response as JSON. Response: ' + text);
+  }
+  return arr;
+}
+
+export async function POST(req: Request) {
+  try {
+    const { cv, jobs } = await req.json();
+    console.log('[Gemini Debug] Payload CV:', JSON.stringify(cv).slice(0, 300));
+    console.log('[Gemini Debug] Payload Jobs:', JSON.stringify(jobs).slice(0, 200));
+    // Perjelas prompt agar AI SELALU mengembalikan array JSON
+    const prompt = `Berdasarkan skill gap antara CV user berikut dan 10 job match berikut, rekomendasikan 10 course online (judul, provider, url, durasi, level, deskripsi, reason relevansi). Jawab HANYA dalam format array JSON: [{ title, provider, url, duration, level, description, reason }]. Jangan tambahkan penjelasan apapun di luar array.`;
+    const geminiResults = await getGeminiCourseRecommend(cv, jobs, prompt);
+    if (!geminiResults || !Array.isArray(geminiResults) || geminiResults.length === 0) {
+      throw new Error('Gemini API tidak mengembalikan rekomendasi course. Coba lagi dengan data CV/job yang lebih lengkap.');
+    }
+    return NextResponse.json(geminiResults);
   } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Server error' }, { status: 500 });
+    console.error('[Gemini API Error]', e);
+    return NextResponse.json({ error: e.message || 'Internal error' }, { status: 500 });
   }
 } 
