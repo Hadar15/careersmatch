@@ -10,10 +10,6 @@ import { createBrowserClient } from "@supabase/ssr"
  *  NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
  *  NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
  */
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 export type Database = {
   public: {
@@ -156,6 +152,11 @@ export type Database = {
     }
   }
 }
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 console.log("ENV URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 console.log("ENV KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);

@@ -1,4 +1,3 @@
-// Random comment: Upload CV page random comment for push
 "use client"
 export const dynamic = "force-dynamic";
 
@@ -21,6 +20,8 @@ import { useRef } from "react";
 // @ts-ignore
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import StepperProgress from "@/components/ui/stepper-progress";
+import { useRouter } from "next/navigation";
 
 // Add Photon geocoding API for place search
 // Remove PHOTON_API and add NOMINATIM_API
@@ -34,6 +35,7 @@ const MAP_STYLE_URL = `https://api.maptiler.com/maps/streets/style.json?key=${MA
 export default function UploadCVPage() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const router = useRouter();
   const [step, setStep] = useState(1)
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [personalInfo, setPersonalInfo] = useState({
@@ -58,6 +60,17 @@ export default function UploadCVPage() {
   // Add state for upload progress
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmittingPersonalInfo, setIsSubmittingPersonalInfo] = useState(false);
+  // State untuk MBTI
+  const [mbtiType, setMbtiType] = useState<string>("");
+  const [mbtiParagraph, setMbtiParagraph] = useState<string>("");
+
+  // Ambil MBTI dari localStorage saat mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setMbtiType(localStorage.getItem('mbtiType') || "");
+      setMbtiParagraph(localStorage.getItem('mbtiParagraph') || "");
+    }
+  }, []);
 
   // Debounced version of handlePersonalInfoSubmit to prevent multiple rapid clicks
   const debouncedPersonalInfoSubmit = useCallback(async () => {
@@ -76,39 +89,181 @@ export default function UploadCVPage() {
         return;
       }
       
-      // Add timeout protection for Supabase operations
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Operation timed out')), 10000)
-      );
-      
-      // Upsert profile to Supabase as soon as personal info is submitted
-      const upsertPromise = supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          email: personalInfo.email,
-          full_name: personalInfo.name,
-          phone: personalInfo.phone,
-          location: JSON.stringify(personalInfo.location),
-          professional_summary: personalInfo.summary,
-          experience_years: parseInt(personalInfo.experience_years, 10),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
-        
-      const result = await Promise.race([upsertPromise, timeoutPromise]);
-      const { error: upsertError } = result as any;
-        
-      if (upsertError) {
-        console.error("Supabase upsert error:", upsertError);
+      // Validate required fields
+      if (!personalInfo.name.trim()) {
         toast({
           title: "Error",
-          description: `Gagal menyimpan data ke server: ${upsertError.message || 'Unknown error'}`,
+          description: "Nama lengkap harus diisi.",
           variant: "destructive",
         });
         return;
       }
       
-      // Save to localStorage for demo
+      if (!personalInfo.email.trim()) {
+        toast({
+          title: "Error", 
+          description: "Email harus diisi.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('Validation passed, user:', user);
+      console.log('User ID:', user.id);
+      console.log('User email:', user.email);
+      
+      // Check if user is properly authenticated with Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Current Supabase session:', session);
+      console.log('Session error:', sessionError);
+      
+      if (!session || !session.user) {
+        console.warn('No active Supabase session found');
+        toast({
+          title: "Warning",
+          description: "Session expired. Data will be saved locally only.",
+          variant: "default",
+        });
+        
+        // Skip Supabase and go directly to localStorage save
+        const profile = {
+          full_name: personalInfo.name,
+          phone: personalInfo.phone,
+          location: personalInfo.location,
+          professional_summary: personalInfo.summary,
+          experience_years: Number.parseInt(personalInfo.experience_years) || null,
+          profile_completion: 40,
+          updated_at: new Date().toISOString(),
+        }
+        
+        try {
+          localStorage.setItem("userProfile", JSON.stringify(profile))
+          setStep(2)
+          toast({
+            title: "Berhasil",
+            description: "Informasi personal tersimpan (mode offline)",
+          })
+          return;
+        } catch (localStorageError) {
+          console.error("Failed to save to localStorage:", localStorageError);
+          toast({
+            title: "Error",
+            description: "Gagal menyimpan data",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
+      // Add timeout protection for Supabase operations (increased to 30 seconds)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Operation timed out after 30 seconds')), 30000)
+      );
+      
+      console.log('Starting Supabase upsert for user:', user.id);
+      console.log('Personal info:', personalInfo);
+      
+      // First, try to get existing profile to understand the current state
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+        
+      console.log('Existing profile:', existingProfile);
+      console.log('Fetch error:', fetchError);
+      
+      // Retry logic for upsert operation
+      let upsertResult = null;
+      let upsertError = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          console.log(`Upsert attempt ${retryCount + 1}/${maxRetries}`);
+          
+          const upsertPromise = supabase
+            .from("profiles")
+            .upsert({
+              id: user.id,
+              email: personalInfo.email,
+              full_name: personalInfo.name,
+              phone: personalInfo.phone,
+              location: personalInfo.location ? JSON.stringify(personalInfo.location) : null,
+              professional_summary: personalInfo.summary || null,
+              experience_years: personalInfo.experience_years ? parseInt(personalInfo.experience_years, 10) : null,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "id" });
+            
+          const result = await Promise.race([upsertPromise, timeoutPromise]);
+          upsertResult = result;
+          upsertError = (result as any)?.error || null;
+          
+          if (!upsertError) {
+            console.log('Upsert successful on attempt', retryCount + 1);
+            break;
+          }
+          
+          console.log(`Attempt ${retryCount + 1} failed:`, upsertError);
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        } catch (error) {
+          console.log(`Attempt ${retryCount + 1} threw error:`, error);
+          upsertError = error;
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        }
+      }
+        
+      if (upsertError) {
+        console.error("Supabase upsert error:", upsertError);
+        
+        // Check for specific error types
+        if (upsertError.code === '42501' || upsertError.message?.includes('row-level security')) {
+          console.warn("RLS policy blocked the operation, proceeding with localStorage only");
+          
+          toast({
+            title: "Info",
+            description: "Data saved locally. You may need to re-authenticate for cloud sync.",
+            variant: "default",
+          });
+        } else if (upsertError.message?.includes('timeout') || upsertError.message?.includes('Operation timed out')) {
+          console.warn("Operation timed out, proceeding with localStorage only");
+          
+          toast({
+            title: "Warning", 
+            description: "Connection slow. Data saved locally.",
+            variant: "default",
+          });
+        } else {
+          console.warn("Supabase failed with error:", upsertError.message);
+          
+          toast({
+            title: "Warning",
+            description: "Data saved locally. Database sync may occur later.",
+            variant: "default",
+          });
+        }
+        
+        // Continue with localStorage save and proceed to next step
+      } else {
+        console.log("Supabase upsert successful");
+        
+        toast({
+          title: "Berhasil",
+          description: "Informasi personal tersimpan dan disinkronkan",
+        });
+      }
+      
+      // Save to localStorage for demo (always do this)
       const profile = {
         full_name: personalInfo.name,
         phone: personalInfo.phone,
@@ -126,11 +281,8 @@ export default function UploadCVPage() {
         // Continue without localStorage - not critical
       }
       
+      // Always proceed to next step
       setStep(2)
-      toast({
-        title: "Berhasil",
-        description: "Informasi personal tersimpan",
-      })
     } catch (error) {
       console.error("Error updating profile:", error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
@@ -268,6 +420,10 @@ export default function UploadCVPage() {
       // Tambahkan log untuk memastikan userId benar
       console.log('user.id yang dikirim ke backend:', user.id);
       formData.append('userId', user.id);
+      // Kirim location, mbtiType, mbtiParagraph
+      formData.append('location', JSON.stringify(personalInfo.location));
+      formData.append('mbtiType', mbtiType);
+      formData.append('mbtiParagraph', mbtiParagraph);
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/upload-cv');
@@ -304,6 +460,9 @@ export default function UploadCVPage() {
       setAnalysisComplete(true);
       setUploadProgress(100);
       setStep(3);
+      // Redirect langsung ke halaman hasil analisa AI
+      console.log('Redirecting to /ai-analysis/hasil setelah upload dan pembuatan file JSON sukses');
+      router.push("/ai-analysis/hasil");
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat upload.");
     } finally {
@@ -384,42 +543,27 @@ export default function UploadCVPage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
-        {/* Header */}
-        <header className="border-b border-sky-100 bg-white/80 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Brain className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-                CareerMatch AI
-              </span>
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="outline" className="border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent">
+        <div className="container mx-auto px-4 py-8 md:py-12">
+          {/* Progress Bar */}
+          <StepperProgress
+            step={step === 1 ? 1 : step === 2 ? 2 : step === 3 ? 3 : 1}
+            steps={["Input/Tes MBTI", "Upload CV", "Hasil Analisis AI"]}
+            progress={step === 1 ? 33 : step === 2 ? 66 : step === 3 ? 100 : 33}
+          />
+
+          {/* Step 1: Personal Information */}
+          {step === 1 && (
+            <div className="max-w-2xl mx-auto mb-4 flex items-center">
+              <Button
+                variant="ghost"
+                className="px-3 py-2 text-sky-600 hover:bg-sky-50 flex items-center"
+                onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/ai-analysis'}
+              >
                 <ArrowLeft className="mr-2 w-4 h-4" />
                 Kembali
               </Button>
-            </Link>
-          </div>
-        </header>
-
-        <div className="container mx-auto px-4 py-8 md:py-12">
-          {/* Progress Bar */}
-          <div className="max-w-2xl mx-auto mb-6 md:mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-sky-600">Progress</span>
-              <span className="text-sm font-medium text-sky-600">{Math.round(progressValue)}%</span>
             </div>
-            <Progress value={progressValue} className="h-2" />
-            <div className="flex justify-between mt-2 text-xs text-gray-500">
-              <span>Info Personal</span>
-              <span>Upload CV</span>
-              <span>Analisis AI</span>
-            </div>
-          </div>
-
-          {/* Step 1: Personal Information */}
+          )}
           {step === 1 && (
             <Card className="max-w-2xl mx-auto border-sky-100 shadow-xl">
               <CardHeader className="text-center">
@@ -437,7 +581,7 @@ export default function UploadCVPage() {
                       name="name"
                       value={personalInfo.name}
                       onChange={handleChange}
-                      placeholder="John Doe"
+                      placeholder="Clementheo Benaya Raya Silitonga"
                     />
                   </div>
                   <div className="space-y-2">
@@ -649,7 +793,7 @@ export default function UploadCVPage() {
                   Analisis Selesai!
                 </CardTitle>
                 <CardDescription>
-                  CV Anda telah dianalisis. Lanjutkan ke tes MBTI untuk hasil yang lebih akurat
+                  CV Anda telah dianalisis. Anda dapat melihat hasil analisis AI di bawah ini.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -657,31 +801,13 @@ export default function UploadCVPage() {
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-white" />
                   </div>
-                  <div className="space-y-4">
-                    <Link href="/mbti-test">
-                      <Button className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600">
-                        Lanjut ke Tes MBTI
-                        <ArrowRight className="ml-2 w-4 h-4" />
-                      </Button>
-                    </Link>
-                    <Link href="/dashboard">
-                      <Button
-                        variant="outline"
-                        className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-transparent"
-                      >
-                        Lihat Dashboard
-                      </Button>
-                    </Link>
-                    <Button
-                      className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600"
-                      onClick={() => {
-                        window.location.href = "/mbti-test";
-                      }}
-                    >
-                      Lanjut ke Tahap Berikutnya
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </div>
+                  <div className="text-lg text-sky-700 font-semibold">Analisis selesai! Silakan lihat hasil AI Anda.</div>
+                  <Button
+                    className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-semibold px-6 py-2 rounded-xl shadow transition"
+                    onClick={() => router.push("/ai-analysis/hasil")}
+                  >
+                    Lihat Hasil Analisis AI
+                  </Button>
                 </div>
               </CardContent>
             </Card>

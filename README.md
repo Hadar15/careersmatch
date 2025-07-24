@@ -71,8 +71,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | Wrong Supabase schema        | Profile/CV/MBTI features break   | Run `scripts/database-setup.sql`    |
 | Supabase redirect not set    | Social login fails               | Add `http://localhost:3000` in Supabase Auth settings |
 | Cookies blocked              | Always logged out                | Allow cookies for `localhost`       |
-| Node/npm version mismatch    | App won’t start                  | Use Node.js 18+                    |
-| Dependency install fails     | App won’t start                  | Ensure build tools are installed    |
+| Node/npm version mismatch    | App won't start                  | Use Node.js 18+                    |
+| Dependency install fails     | App won't start                  | Ensure build tools are installed    |
 | API rate limits/CORS         | Job data missing                 | Use fallback/mock data or check API |
 | Prod/dev differences         | Inconsistent auth/session        | Test both environments              |
 
@@ -81,7 +81,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - **Clear cookies** for `localhost:3000` if you have auth/session issues.
 - **Check browser settings**: Allow cookies and localStorage for `localhost`.
 - **Check for `sb-access-token` and `sb-refresh-token` cookies** after login. If missing, Supabase auth is not persisting.
-- **Check the browser console** for errors if something doesn’t work.
+- **Check the browser console** for errors if something doesn't work.
 
 ## 🌐 Live Demo
 
