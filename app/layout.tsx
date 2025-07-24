@@ -6,10 +6,6 @@ import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "@/components/ui/toaster"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
-import ErrorBoundary from "@/components/error-boundary"
-import GlobalErrorHandler from "@/components/global-error-handler"
-import ExtensionErrorSuppressor from "@/components/extension-error-suppressor"
-import NetworkErrorSuppressor from "@/components/network-error-suppressor"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
@@ -114,17 +110,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${inter.className} antialiased`}>
-        <ErrorBoundary>
-          <ExtensionErrorSuppressor />
-          <NetworkErrorSuppressor />
-          <GlobalErrorHandler />
-          <AuthProvider>
-            <Header />
-            <div className="min-h-screen bg-white">{children}</div>
-            <Footer />
-            <Toaster />
-          </AuthProvider>
-        </ErrorBoundary>
+        <AuthProvider>
+          <Header />
+          <div className="min-h-screen bg-white">{children}</div>
+          <Footer />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   )

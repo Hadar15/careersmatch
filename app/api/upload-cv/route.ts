@@ -211,7 +211,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload extracted JSON to storage', details: jsonUploadError.message }, { status: 500 });
     }
 
-    // 7. Return success response
+    // 7. Insert metadata to cv_uploads table
+    const fileUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/resumes/${userId}/${fileName}`;
+    const jsonUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/resumes/${userId}/${jsonFileName}`;
+    const { error: insertError } = await supabase.from('cv_uploads').insert([
+      {
+        user_id: userId,
+        file_name: fileName,
+        file_url: fileUrl,
+        file_size: fileObj.size,
+        uploaded_at: new Date().toISOString(),
+        analysis_status: 'done',
+        analysis_result: extractedJson,
+        // json_url: jsonUrl, // HAPUS agar tidak error
+      }
+    ]);
+    if (insertError) {
+      return NextResponse.json({ error: 'Failed to insert metadata to cv_uploads', details: insertError.message }, { status: 500 });
+    }
+
+    // 8. Return success response
     return NextResponse.json({ success: true, filePath, jsonFilePath });
   } catch (err: any) {
     return NextResponse.json({ error: 'Unexpected server error', details: err.message }, { status: 500 });

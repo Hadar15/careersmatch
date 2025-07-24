@@ -103,7 +103,6 @@ export default function UploadCVPage() {
           description: "Nama lengkap harus diisi.",
           variant: "destructive",
         });
-        setIsSubmittingPersonalInfo(false);
         return;
       }
       
@@ -113,7 +112,6 @@ export default function UploadCVPage() {
           description: "Email harus diisi.",
           variant: "destructive",
         });
-        setIsSubmittingPersonalInfo(false);
         return;
       }
       
@@ -152,7 +150,6 @@ export default function UploadCVPage() {
             title: "Berhasil",
             description: "Informasi personal tersimpan (mode offline)",
           })
-          setIsSubmittingPersonalInfo(false);
           return;
         } catch (localStorageError) {
           console.error("Failed to save to localStorage:", localStorageError);
@@ -161,7 +158,6 @@ export default function UploadCVPage() {
             description: "Gagal menyimpan data",
             variant: "destructive",
           });
-          setIsSubmittingPersonalInfo(false);
           return;
         }
       }
@@ -447,209 +443,49 @@ export default function UploadCVPage() {
       formData.append('file', cvFile);
       console.log('user.id yang dikirim ke backend:', user.id);
       formData.append('userId', user.id);
+      // Kirim location, mbtiType, mbtiParagraph
       formData.append('location', JSON.stringify(personalInfo.location));
       formData.append('mbtiType', mbtiType);
       formData.append('mbtiParagraph', mbtiParagraph);
-      
-      let uploadResult;
-      let uploadSuccess = false;
-      
-      // Strategy 1: Try modern fetch first (more extension-resistant)
-      try {
-        console.log('Attempting upload with fetch API (Strategy 1)');
-        setUploadProgress(10);
-        
-        const controller = new AbortController();
-        const fetchTimeout = setTimeout(() => {
-          controller.abort();
-        }, 90000); // 90 second timeout for fetch
-        
-        const response = await fetch('/api/upload-cv', {
-          method: 'POST',
-          body: formData,
-          signal: controller.signal
-        });
-        
-        clearTimeout(fetchTimeout);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        setUploadProgress(50);
-        uploadResult = await response.text();
-        setUploadProgress(90);
-        uploadSuccess = true;
-        console.log('Fetch upload successful');
-        
-      } catch (fetchError) {
-        console.warn('Fetch upload failed, trying XMLHttpRequest fallback:', fetchError);
-        
-        // Strategy 2: XMLHttpRequest with enhanced extension protection
-        try {
-          uploadResult = await new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            let isCompleted = false;
-            let progressInterval: NodeJS.Timeout;
-            
-            // Enhanced timeout with cleanup
-            const timeoutId = setTimeout(() => {
-              if (!isCompleted) {
-                isCompleted = true;
-                if (progressInterval) clearInterval(progressInterval);
-                try {
-                  xhr.abort();
-                } catch (abortError) {
-                  console.warn('XHR abort failed:', abortError);
-                }
-                reject(new Error('Upload timeout after 90 seconds'));
-              }
-            }, 90000); // 90 seconds timeout
-            
-            // Fallback progress simulation for when onprogress fails
-            progressInterval = setInterval(() => {
-              if (!isCompleted && xhr.readyState !== 4) {
-                setUploadProgress(prev => Math.min(prev + 2, 80));
-              }
-            }, 1000);
-            
-            xhr.open('POST', '/api/upload-cv');
-            
-            // Wrap progress handler to catch extension errors
-            xhr.upload.onprogress = (event) => {
-              try {
-                if (event.lengthComputable && !isCompleted) {
-                  const progress = Math.round((event.loaded / event.total) * 90);
-                  setUploadProgress(progress);
-                }
-              } catch (progressError) {
-                console.warn('Progress event error (likely extension interference):', progressError);
-                // Continue without progress updates
-              }
-            };
-            
-            xhr.onload = () => {
-              if (!isCompleted) {
-                isCompleted = true;
-                clearTimeout(timeoutId);
-                if (progressInterval) clearInterval(progressInterval);
-                
-                if (xhr.status >= 200 && xhr.status < 300) {
-                  setUploadProgress(90);
-                  resolve(xhr.responseText);
-                } else {
-                  reject(new Error(xhr.responseText || 'Upload failed'));
-                }
-              }
-            };
-            
-            const handleError = (errorType: string) => {
-              if (!isCompleted) {
-                isCompleted = true;
-                clearTimeout(timeoutId);
-                if (progressInterval) clearInterval(progressInterval);
-                reject(new Error(`Upload ${errorType}`));
-              }
-            };
-            
-            xhr.onerror = () => handleError('failed');
-            xhr.onabort = () => handleError('aborted');
-            xhr.ontimeout = () => handleError('timed out');
-            
-            try {
-              xhr.send(formData);
-            } catch (sendError) {
-              handleError('failed to start');
-            }
-          });
-          
-          uploadSuccess = true;
-          console.log('XMLHttpRequest upload successful');
-          
-        } catch (xhrError) {
-          console.error('Both fetch and XMLHttpRequest failed:', xhrError);
-          throw new Error('Upload failed with all methods. Please try again.');
-        }
-      }
-      
-      if (!uploadSuccess) {
-        throw new Error('Upload failed - no successful method');
-      }
-      
-      console.log('CV upload successful, creating analysis data...');
-      setUploadProgress(95);
-      
-      // Create mock analysis data for the results page
-      const mockAnalysis = await simulateAIAnalysis(cvFile.name);
-      
-      console.log('Mock analysis created:', mockAnalysis);
-      
-      // Save analysis result to localStorage with error protection
-      try {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem("cvAnalysis", JSON.stringify(mockAnalysis));
-          
-          // Update profile completion
-          const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
-          profile.profile_completion = 70;
-          localStorage.setItem("userProfile", JSON.stringify(profile));
-          
-          console.log('Analysis data saved to localStorage');
-        }
-      } catch (localStorageError) {
-        console.warn('localStorage save failed:', localStorageError);
-        // Continue without localStorage - not critical
-      }
-      
-      // Update or insert profile (wrapped in try-catch to prevent errors from blocking success)
-      try {
-        const profileTimeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Profile update timeout')), 15000)
-        );
-        
-        const profileUpdate = supabase
-          .from("profiles")
-          .upsert({
-            id: user.id,
-            email: personalInfo.email,
-            full_name: personalInfo.name,
-            phone: personalInfo.phone,
-            location: JSON.stringify(personalInfo.location),
-            professional_summary: personalInfo.summary,
-            experience_years: parseInt(personalInfo.experience_years, 10),
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "id" });
-        
-        await Promise.race([profileUpdate, profileTimeout]);
-        
-      } catch (profileError) {
-        console.warn('Profile update error (non-blocking):', profileError);
-        // Continue without throwing - profile update is not critical for upload success
-      }
-      
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload-cv');
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setUploadProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error(xhr.responseText || 'Terjadi kesalahan saat upload.'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Terjadi kesalahan saat upload.'));
+        xhr.send(formData);
+      });
+      // Update or insert profile (as before)
+      const { error: upsertError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          email: personalInfo.email,
+          full_name: personalInfo.name,
+          phone: personalInfo.phone,
+          location: JSON.stringify(personalInfo.location),
+          professional_summary: personalInfo.summary,
+          experience_years: parseInt(personalInfo.experience_years, 10),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+      if (upsertError) throw upsertError;
       setSuccess("CV dan profil berhasil diupload dan dianalisis!");
       setAnalysisComplete(true);
       setUploadProgress(100);
       setStep(3);
-      
-      // Clear master timeout since we succeeded
-      clearTimeout(masterTimeout);
-      
-      // Add a small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Reset loading state before navigation
-      setIsAnalyzing(false);
-      
-      // Protected navigation with fallback
-      try {
-        router.push("/ai-analysis/hasil");
-      } catch (navigationError) {
-        console.warn('Router navigation failed:', navigationError);
-        // Fallback: use window.location
-        window.location.href = "/ai-analysis/hasil";
-      }
-      
+      // Redirect langsung ke halaman hasil analisa AI
+      console.log('Redirecting to /ai-analysis/hasil setelah upload dan pembuatan file JSON sukses');
+      router.push("/ai-analysis/hasil");
     } catch (err: any) {
       console.error('Upload error:', err);
       clearTimeout(masterTimeout);

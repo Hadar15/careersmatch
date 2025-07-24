@@ -39,27 +39,31 @@ export default function Header() {
             </div>
           </Link>
         </div>
-        {/* Desktop Navigation */}
-        {!user && (
-          <nav className="hidden lg:flex items-center space-x-8">
-            <Link href="#features" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
-              Fitur
+        {/* Desktop Navigation - SELALU TAMPIL */}
+        <nav className="hidden lg:flex items-center space-x-8">
+          <Link href="#features" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+            Fitur
+          </Link>
+          <Link href="#jobs" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+            Jobs
+          </Link>
+          <Link href="#courses" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+            Courses
+          </Link>
+          <Link href="#how-it-works" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
+            Cara Kerja
+          </Link>
+          <Badge className="bg-gradient-to-r from-emerald-100 to-sky-100 text-emerald-700 border-emerald-200">
+            <Globe className="w-3 h-3 mr-1" />
+            Untuk Indonesia
+          </Badge>
+          {/* Tambahkan menu dashboard/profil jika user login */}
+          {user && (
+            <Link href="/dashboard" className="text-gray-600 hover:text-emerald-600 transition-colors font-medium">
+              Dashboard
             </Link>
-            <Link href="#jobs" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
-              Jobs
-            </Link>
-            <Link href="#courses" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
-              Courses
-            </Link>
-            <Link href="#how-it-works" className="text-gray-600 hover:text-sky-600 transition-colors font-medium">
-              Cara Kerja
-            </Link>
-            <Badge className="bg-gradient-to-r from-emerald-100 to-sky-100 text-emerald-700 border-emerald-200">
-              <Globe className="w-3 h-3 mr-1" />
-              Untuk Indonesia
-            </Badge>
-          </nav>
-        )}
+          )}
+        </nav>
         {/* Desktop Buttons */}
         <div className="hidden lg:flex items-center space-x-3">
           {user ? (
@@ -87,21 +91,19 @@ export default function Header() {
           )}
         </div>
         {/* Mobile Menu Button */}
-        {!user && (
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-gray-600" />
-            ) : (
-              <Menu className="w-6 h-6 text-gray-600" />
-            )}
-          </button>
-        )}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          {mobileMenuOpen ? (
+            <X className="w-6 h-6 text-gray-600" />
+          ) : (
+            <Menu className="w-6 h-6 text-gray-600" />
+          )}
+        </button>
       </div>
-      {/* Mobile Navigation (only if not logged in) */}
-      {!user && mobileMenuOpen && (
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
         <div className="lg:hidden border-t border-sky-100 bg-white/95 backdrop-blur-md">
           <div className="container mx-auto px-4 py-4 space-y-4">
             <nav className="flex flex-col space-y-4">
@@ -117,25 +119,46 @@ export default function Header() {
               <Link href="#how-it-works" className="text-gray-600 hover:text-sky-600 transition-colors font-medium py-2" onClick={() => setMobileMenuOpen(false)}>
                 Cara Kerja
               </Link>
-              <div className="flex items-center space-x-4 pt-4">
-                <Link href="/auth/login" className="flex-1">
-                  <Button
-                    variant="outline"
-                    className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Masuk
-                  </Button>
+              <Badge className="bg-gradient-to-r from-emerald-100 to-sky-100 text-emerald-700 border-emerald-200">
+                <Globe className="w-3 h-3 mr-1" />
+                Untuk Indonesia
+              </Badge>
+              {/* Tambahkan menu dashboard/profil jika user login */}
+              {user && (
+                <Link href="/dashboard" className="text-gray-600 hover:text-emerald-600 transition-colors font-medium py-2" onClick={() => setMobileMenuOpen(false)}>
+                  Dashboard
                 </Link>
-                <Link href="/auth/register" className="flex-1">
+              )}
+              {user ? (
+                <Link href="/dashboard" className="flex-1">
                   <Button
                     className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Daftar
+                    Profil saya
                   </Button>
                 </Link>
-              </div>
+              ) : (
+                <>
+                  <Link href="/auth/login" className="flex-1">
+                    <Button
+                      variant="outline"
+                      className="w-full border-sky-200 text-sky-600 hover:bg-sky-50 bg-white/80 backdrop-blur-sm font-medium"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Masuk
+                    </Button>
+                  </Link>
+                  <Link href="/auth/register" className="flex-1">
+                    <Button
+                      className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Daftar
+                    </Button>
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         </div>
