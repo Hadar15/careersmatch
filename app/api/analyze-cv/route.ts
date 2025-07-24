@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +11,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'User ID and CV filename are required' },
         { status: 400 }
+      );
+    }
+
+    // Create server-side Supabase client with authentication context
+    const supabase = await createServerSupabaseClient();
+
+    // Verify user authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('[ANALYZE-CV] Authentication failed:', authError);
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify the authenticated user matches the requested userId
+    if (user.id !== userId) {
+      console.error('[ANALYZE-CV] User ID mismatch:', { authUserId: user.id, requestUserId: userId });
+      return NextResponse.json(
+        { error: 'Unauthorized access' },
+        { status: 403 }
       );
     }
 
