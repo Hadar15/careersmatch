@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/auth/verify-email` : undefined,
+        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined,
       },
     })
   }
