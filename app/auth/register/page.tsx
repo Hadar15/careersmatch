@@ -89,11 +89,31 @@ export default function RegisterPage() {
     setLoading(true)
     setError("")
     try {
-      // Use production URL for OAuth redirect - never use localhost in production
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://careersmatchai.vercel.app';
+      // Debug environment variables
+      console.log('Environment check:');
+      console.log('process.env.NEXT_PUBLIC_BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL);
+      console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
+      console.log('window.location.origin:', typeof window !== 'undefined' ? window.location.origin : 'server-side');
+      
+      // Determine the correct base URL
+      let baseUrl = 'https://careersmatchai.vercel.app'; // Default to production
+      
+      // Only use localhost if we're definitely in development
+      if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
+        baseUrl = 'http://localhost:3000';
+      }
+      
+      // Override with env var if it exists and is not localhost in production
+      if (process.env.NEXT_PUBLIC_BASE_URL && 
+          !(typeof window !== 'undefined' && 
+            window.location.origin.includes('vercel.app') && 
+            process.env.NEXT_PUBLIC_BASE_URL.includes('localhost'))) {
+        baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+      }
+      
       const redirectTo = `${baseUrl}/auth/callback`;
       
-      console.log('OAuth redirect URL:', redirectTo); // Debug log
+      console.log('Final OAuth redirect URL:', redirectTo);
       
       const { error } = await supabase.auth.signInWithOAuth({ 
         provider: "google",
