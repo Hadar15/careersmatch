@@ -89,9 +89,8 @@ export default function RegisterPage() {
     setLoading(true)
     setError("")
     try {
-      // Dynamic URL handling for different environments
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-        (typeof window !== 'undefined' ? window.location.origin : 'https://careersmatchai.vercel.app');
+      // Use production URL for OAuth redirect - never use localhost in production
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://careersmatchai.vercel.app';
       const redirectTo = `${baseUrl}/auth/callback`;
       
       console.log('OAuth redirect URL:', redirectTo); // Debug log
