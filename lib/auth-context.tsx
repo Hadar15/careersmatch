@@ -101,7 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: {
         data: { full_name: fullName },
+<<<<<<< HEAD
         emailRedirectTo,
+=======
+        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
+>>>>>>> 97a97e5e26f35b48f3082afbc97ca009cf806726
       },
     })
     // If user is null, it means email confirmation is required

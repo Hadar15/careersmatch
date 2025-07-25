@@ -63,7 +63,12 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: "google" })
+      const { error } = await supabase.auth.signInWithOAuth({ 
+        provider: "google",
+        options: {
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
+        }
+      })
       if (error) {
         setError(error.message)
         toast({
@@ -71,14 +76,8 @@ export default function LoginPage() {
           description: error.message,
           variant: "destructive",
         })
-      } else {
-        // Tunggu session berubah, lalu redirect ke landing page
-        supabase.auth.onAuthStateChange((_event, session) => {
-          if (session) {
-            router.push("/")
-          }
-        })
       }
+      // Note: Don't handle the redirect here as it will be handled by the callback
     } catch (err) {
       setError("Terjadi kesalahan Google OAuth")
     } finally {
