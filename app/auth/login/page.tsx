@@ -63,62 +63,41 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
     try {
-      // Debug environment variables
-      console.log('Environment check:');
-      console.log('process.env.NEXT_PUBLIC_BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL);
-      console.log('window.location.origin:', typeof window !== 'undefined' ? window.location.origin : 'server-side');
-      
-      // Determine the correct base URL
-      let baseUrl = 'https://careersmatchai.vercel.app'; // Default to production
-      
-      // Only use localhost if we're definitely in development
-      if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
-        baseUrl = 'http://localhost:3000';
-      }
-      
-      // Override with env var if it exists and is not localhost in production
-      if (process.env.NEXT_PUBLIC_BASE_URL && 
-          !(typeof window !== 'undefined' && 
-            window.location.origin.includes('vercel.app') && 
-            process.env.NEXT_PUBLIC_BASE_URL.includes('localhost'))) {
-        baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-      }
-      
-      // Force production URL and add cache busting
-      const redirectTo = `https://careersmatchai.vercel.app/auth/callback?t=${Date.now()}`;
-      
-      console.log('Final OAuth redirect URL:', redirectTo);
-      
+      // Use environment variable for redirectTo, fallback to production URL
+      const redirectTo = process.env.NEXT_PUBLIC_BASE_URL
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`
+        : "https://careersmatchai.vercel.app/auth/callback";
+
       // Clear any existing Supabase session first
       await supabase.auth.signOut();
-      
-      const { error } = await supabase.auth.signInWithOAuth({ 
+
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo,
           queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-            hd: '', // Force account picker
+            access_type: "offline",
+            prompt: "consent",
+            hd: "", // Force account picker
           },
           skipBrowserRedirect: false,
-        }
-      })
-      
+        },
+      });
+
       if (error) {
-        setError(error.message)
+        setError(error.message);
         toast({
           title: "Login Google Gagal",
           description: error.message,
           variant: "destructive",
-        })
-        setLoading(false)
+        });
+        setLoading(false);
       }
       // Remove the auth state listener - let the callback page handle everything
     } catch (err) {
-      setError("Terjadi kesalahan Google OAuth")
-      console.error("OAuth Error:", err)
-      setLoading(false)
+      setError("Terjadi kesalahan Google OAuth");
+      console.error("OAuth Error:", err);
+      setLoading(false);
     }
   }
 
