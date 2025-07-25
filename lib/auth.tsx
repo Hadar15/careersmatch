@@ -46,8 +46,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Sign up with email/password
   const signUp = async (email: string, password: string, fullName: string) => {
+<<<<<<< HEAD
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
     const emailRedirectTo = baseUrl ? `${baseUrl}/auth/callback` : undefined;
+=======
+    // Use environment variable for base URL if available, fallback to window.location.origin
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
+    const emailRedirectTo = baseUrl ? `${baseUrl}/auth/callback` : undefined;
+
+>>>>>>> 9ea1e721060019ac08b114e8bd04aeb0c5a5ec13
     return await supabase.auth.signUp({
       email,
       password,
