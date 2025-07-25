@@ -93,12 +93,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    // Gunakan base URL dari env jika ada, fallback ke window.location.origin
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
+    const emailRedirectTo = baseUrl ? `${baseUrl}/auth/verify-email` : undefined;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/verify-email` : undefined,
+        emailRedirectTo,
       },
     })
     // If user is null, it means email confirmation is required
