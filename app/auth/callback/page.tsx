@@ -39,7 +39,7 @@ function CallbackContent() {
               description: sessionError.message,
               variant: "destructive",
             })
-            router.push("/auth/login")
+            router.replace("/auth/login")
             return
           }
 
@@ -57,15 +57,15 @@ function CallbackContent() {
               .eq('id', data.session.user.id)
               .single()
 
-            // Redirect based on profile completion
+            // Redirect based on profile completion - use replace to avoid back button issues
             if (profile && profile.profile_completion >= 100) {
-              router.push("/dashboard")
+              router.replace("/dashboard")
             } else {
-              router.push("/profile")
+              router.replace("/profile")
             }
           } else {
             // No session created, redirect to login
-            router.push("/auth/login")
+            router.replace("/auth/login")
           }
         } else {
           // No code parameter, try getting existing session as fallback

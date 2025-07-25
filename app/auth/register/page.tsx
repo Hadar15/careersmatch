@@ -90,8 +90,11 @@ export default function RegisterPage() {
     setError("")
     try {
       // Dynamic URL handling for different environments
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://careersmatchai.vercel.app';
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+        (typeof window !== 'undefined' ? window.location.origin : 'https://careersmatchai.vercel.app');
       const redirectTo = `${baseUrl}/auth/callback`;
+      
+      console.log('OAuth redirect URL:', redirectTo); // Debug log
       
       const { error } = await supabase.auth.signInWithOAuth({ 
         provider: "google",
