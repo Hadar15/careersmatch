@@ -89,22 +89,9 @@ export default function RegisterPage() {
     setLoading(true)
     setError("")
     try {
-<<<<<<< HEAD
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
       const redirectTo = baseUrl ? `${baseUrl}/auth/callback` : undefined;
       const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } })
-=======
-      // Use environment variable for base URL if available, fallback to window.location.origin
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
-      const redirectTo = baseUrl ? `${baseUrl}/auth/callback` : undefined;
-
-      const { error } = await supabase.auth.signInWithOAuth({ 
-        provider: "google",
-        options: {
-          redirectTo,
-        }
-      })
->>>>>>> 9ea1e721060019ac08b114e8bd04aeb0c5a5ec13
       if (error) {
         setError(error.message)
         toast({
