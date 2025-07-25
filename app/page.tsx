@@ -22,12 +22,25 @@ function HomePageContent() {
   useEffect(() => {
     if (!searchParams) return;
     const code = searchParams.get("code");
+    const error_description = searchParams.get("error_description");
+    
+    if (error_description) {
+      console.error("OAuth error:", error_description);
+      return;
+    }
+    
     if (code) {
+      console.log("Received OAuth code, exchanging for session...");
       // Exchange the code for a session (for Supabase v2+)
       import("@/lib/supabase").then(({ supabase }) => {
-        supabase.auth.exchangeCodeForSession(code).then(() => {
-          // Remove the code param from the URL
-          router.replace("/", { scroll: false });
+        supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+          if (error) {
+            console.error("Error exchanging code:", error);
+          } else {
+            console.log("Successfully exchanged code for session");
+            // Remove the code param from the URL
+            router.replace("/dashboard", { scroll: false });
+          }
         });
       });
     }
