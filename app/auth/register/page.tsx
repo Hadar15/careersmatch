@@ -89,12 +89,9 @@ export default function RegisterPage() {
     setLoading(true)
     setError("")
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ 
-        provider: "google",
-        options: {
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
-        }
-      })
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
+      const redirectTo = baseUrl ? `${baseUrl}/auth/callback` : undefined;
+      const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } })
       if (error) {
         setError(error.message)
         toast({
@@ -102,8 +99,14 @@ export default function RegisterPage() {
           description: error.message,
           variant: "destructive",
         })
+      } else {
+        // Tunggu session berubah, lalu redirect ke dashboard
+        supabase.auth.onAuthStateChange((_event, session) => {
+          if (session) {
+            router.push("/")
+          }
+        })
       }
-      // Note: Don't handle the redirect here as it will be handled by the callback
     } catch (err) {
       setError("Terjadi kesalahan Google OAuth")
     } finally {
