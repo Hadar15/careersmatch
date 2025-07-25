@@ -84,9 +84,13 @@ export default function LoginPage() {
         baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
       }
       
-      const redirectTo = `${baseUrl}/auth/callback`;
+      // Force production URL and add cache busting
+      const redirectTo = `https://careersmatchai.vercel.app/auth/callback?t=${Date.now()}`;
       
       console.log('Final OAuth redirect URL:', redirectTo);
+      
+      // Clear any existing Supabase session first
+      await supabase.auth.signOut();
       
       const { error } = await supabase.auth.signInWithOAuth({ 
         provider: "google",
@@ -95,7 +99,9 @@ export default function LoginPage() {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-          }
+            hd: '', // Force account picker
+          },
+          skipBrowserRedirect: false,
         }
       })
       
