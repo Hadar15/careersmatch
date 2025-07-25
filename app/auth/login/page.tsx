@@ -63,11 +63,14 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
     try {
-      // Alternative approach: Let Supabase handle the redirect naturally
+      // Dynamic URL handling for different environments
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
+      const redirectTo = baseUrl ? `${baseUrl}/auth/callback` : undefined;
+      
       const { error } = await supabase.auth.signInWithOAuth({ 
         provider: "google",
         options: {
-          redirectTo: 'https://careersmatchai.vercel.app/auth/callback',
+          redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -83,8 +86,17 @@ export default function LoginPage() {
           variant: "destructive",
         })
         setLoading(false)
+      } else {
+        // Set up auth state listener for successful authentication
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (session) {
+            // Clean up the subscription to prevent memory leaks
+            subscription.unsubscribe()
+            router.push("/")
+          }
+        })
       }
-      // Don't set loading to false here - the page will redirect
+      // Note: Don't set loading to false on success - the page will redirect
     } catch (err) {
       setError("Terjadi kesalahan Google OAuth")
       console.error("OAuth Error:", err)
