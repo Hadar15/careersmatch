@@ -20,21 +20,6 @@ function HomePageContent() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    // CRITICAL: Handle localhost OAuth redirects
-    if (typeof window !== 'undefined') {
-      const currentUrl = window.location.href;
-      const isLocalhost = window.location.hostname === 'localhost';
-      const hasOAuthCode = window.location.search.includes('code=');
-      
-      // If we're on localhost with an OAuth code, redirect to production immediately
-      if (isLocalhost && hasOAuthCode) {
-        const productionUrl = currentUrl.replace('http://localhost:3000', 'https://careersmatchai.vercel.app');
-        console.log('Redirecting from localhost to production:', productionUrl);
-        window.location.replace(productionUrl);
-        return;
-      }
-    }
-
     if (!searchParams) return;
     const code = searchParams.get("code");
     const error_description = searchParams.get("error_description");
