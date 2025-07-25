@@ -36,6 +36,7 @@ async function getGeminiCourseRecommend(cv: any, jobs: any[], prompt: string) {
   } catch {
     throw new Error('Failed to parse Gemini response as JSON. Response: ' + text);
   }
+  //p
   return arr;
 }
 
