@@ -86,17 +86,8 @@ export default function LoginPage() {
           variant: "destructive",
         })
         setLoading(false)
-      } else {
-        // Set up auth state listener for successful authentication
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-          if (session) {
-            // Clean up the subscription to prevent memory leaks
-            subscription.unsubscribe()
-            router.push("/")
-          }
-        })
       }
-      // Note: Don't set loading to false on success - the page will redirect
+      // Remove the auth state listener - let the callback page handle everything
     } catch (err) {
       setError("Terjadi kesalahan Google OAuth")
       console.error("OAuth Error:", err)
