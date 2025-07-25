@@ -11,16 +11,6 @@ function CallbackContent() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // If we're on localhost but should be on production, redirect immediately
-    if (typeof window !== 'undefined' && 
-        window.location.host === 'localhost:3000' && 
-        window.location.search.includes('code=')) {
-      const currentUrl = window.location.href;
-      const productionUrl = currentUrl.replace('http://localhost:3000', 'https://careersmatchai.vercel.app');
-      window.location.replace(productionUrl);
-      return;
-    }
-
     const handleAuthCallback = async () => {
       try {
         // Get authorization code from URL parameters
